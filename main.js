@@ -1378,7 +1378,7 @@ function init(event){
   createHero();
   // createMonster();
   createFirs();
-  createCottages(); 
+  // createCottages(); 
   createCarrot();
   createBonusParticles();
   createObstacle();
