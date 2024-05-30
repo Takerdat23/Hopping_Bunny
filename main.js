@@ -31,6 +31,8 @@ var audio = new Audio('https://s3-us-west-2.amazonaws.com/s.cdpn.io/264161/Anton
 
 var fieldGameOver, fieldDistance;
 
+const gltfLoader = new THREE.GLTFLoader();
+
 //SCREEN & MOUSE VARIABLES
 
 var HEIGHT, WIDTH, windowHalfX, windowHalfY,
@@ -219,6 +221,11 @@ function createFloor() {
   scene.add(floor2);
 }
 
+// https://github.khronos.org/glTF-Sample-Viewer-Release/assets/models/Models/AnimatedMorphCube/glTF/AnimatedMorphCube.gltf
+
+test_obj = function(){
+
+}
 
 Hero = function() {
   this.status = "running";
@@ -368,6 +375,16 @@ Hero = function() {
   
   this.eyeR.position.x = -this.eyeL.position.x;
   this.head.add(this.eyeR);
+
+  gltfLoader.load("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Fox/glTF/Fox.gltf", (gltf) => {
+    ob = gltf.scene;
+    // console.log(this.ob)
+    ob.scale.y=0.3
+    ob.scale.x=0.3
+    ob.scale.z=0.3
+    // ob.rotation.y=Math.PI/2
+    this.body.add(ob);
+  });
 
   this.body.traverse(function(object) {
     if (object instanceof THREE.Mesh) {
