@@ -38,6 +38,8 @@ var gltfLoader = new THREE.GLTFLoader();
 // // Load the GLTF model
 var cottageModel;
 
+// for animation
+var mixer
 // // Load the model
 
 gltfLoader.load(
@@ -421,11 +423,15 @@ Hero = function () {
   this.head.add(this.eyeR);
 
   gltfLoader.load("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Fox/glTF/Fox.gltf", (gltf) => {
-    ob = gltf.scene;
+    var ob = gltf.scene;
     ob.scale.y = 0.3
     ob.scale.x = 0.3
     ob.scale.z = 0.3
     // ob.rotation.y=Math.PI/2
+
+    mixer = new THREE.AnimationMixer(gltf.scene)
+
+    mixer.clipAction(gltf.animations[2]).play();
 
     this.body.add(ob);
 
@@ -543,6 +549,8 @@ Hero.prototype.run = function () {
 
 
   this.pawBL.position.z = - Math.cos(Math.PI + t) * amp;
+
+
 
 
 }
@@ -1394,6 +1402,7 @@ function loop() {
     updateObstaclePosition();
     checkCollision();
   }
+  if ( mixer ) mixer.update( delta );
 
   render();
   requestAnimationFrame(loop);
