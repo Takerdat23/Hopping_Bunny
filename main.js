@@ -1,4 +1,4 @@
-//THREEJS RELATED VARIABLES 
+
 
 var scene,
   camera, fieldOfView, aspectRatio, nearPlane, farPlane,
@@ -7,6 +7,7 @@ var scene,
   container,
   controls, 
   clock;
+
 var delta = 0;
 var floorRadius = 200;
 var speed = 10;
@@ -30,6 +31,47 @@ var malusClearAlpha = 0;
 var audio = new Audio('https://s3-us-west-2.amazonaws.com/s.cdpn.io/264161/Antonio-Vivaldi-Summer_01.mp3');
 
 var fieldGameOver, fieldDistance;
+
+// var loader = new THREE.GLTFLoader();
+
+// // Load the GLTF model
+// var cottageModel;
+
+// // Load the model
+
+// loader.load(
+//   './models/cottage/scene.gltf', // Ensure this path is correct
+//   function (gltf) {
+//     cottageModel = gltf.scene;
+//     cottageModel.scale.set(0.1, 0.1, 0.1);
+//     console.log('Cottage model loaded successfully');
+//   },
+//   function (xhr) {
+//     console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+//   },
+//   function (error) {
+//     console.error('An error occurred while loading the model:', error);
+//   }
+// );
+// TEXTURE 
+
+var loader = new THREE.TextureLoader();
+var grassTexture = loader.load('./public/middle_grass.jpg');  
+var bumpTexture = loader.load('./public/middle_grass.jpg');
+
+
+grassTexture.wrapS = THREE.RepeatWrapping;
+grassTexture.wrapT = THREE.RepeatWrapping;
+grassTexture.repeat.set(10, 10); // Adjust the repeat values as needed
+
+// Ensure the bump texture is repeatable
+bumpTexture.wrapS = THREE.RepeatWrapping;
+bumpTexture.wrapT = THREE.RepeatWrapping;
+bumpTexture.repeat.set(10, 10);
+
+
+
+
 
 //SCREEN & MOUSE VARIABLES
 
@@ -89,17 +131,19 @@ var PI = Math.PI;
 
 //INIT THREE JS, SCREEN AND MOUSE EVENTS
 
-function initScreenAnd3D() {
 
+
+function initScreenAnd3D() {
   HEIGHT = window.innerHeight;
   WIDTH = window.innerWidth;
   windowHalfX = WIDTH / 2;
   windowHalfY = HEIGHT / 2;
 
   scene = new THREE.Scene();
-  
-  scene.fog = new THREE.Fog(0xd6eae6, 160,350);
-  
+
+  // Add exponential fog to the scene with a lower density for a more gradual effect
+  scene.fog = new THREE.FogExp2(0xffffff, 0.0035); // Adjust the density value to make the fog more appropriate
+
   aspectRatio = WIDTH / HEIGHT;
   fieldOfView = 50;
   nearPlane = 1;
@@ -120,8 +164,8 @@ function initScreenAnd3D() {
     antialias: true
   });
   renderer.setPixelRatio(window.devicePixelRatio); 
-  renderer.setClearColor( malusClearColor, malusClearAlpha);
-  
+  renderer.setClearColor(malusClearColor, malusClearAlpha);
+
   renderer.setSize(WIDTH, HEIGHT);
   renderer.shadowMap.enabled = true;
 
@@ -132,16 +176,7 @@ function initScreenAnd3D() {
   document.addEventListener('mousedown', handleMouseDown, false);
   document.addEventListener("touchend", handleMouseDown, false);
 
-  /*
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
-  //controls.minPolarAngle = -Math.PI / 2; 
-  //controls.maxPolarAngle = Math.PI / 2;
-  //controls.noZoom = true;
-  controls.noPan = true;
-  //*/
-  
   clock = new THREE.Clock();
-
 }
 
 function handleWindowResize() {
@@ -153,7 +188,6 @@ function handleWindowResize() {
   camera.aspect = WIDTH / HEIGHT;
   camera.updateProjectionMatrix();
 }
-
 
 function handleMouseDown(event){
   if (gameStatus == "play") hero.jump();
@@ -182,6 +216,12 @@ function createLights() {
 }
 
 function createFloor() {
+  var floorMaterial = new THREE.MeshPhongMaterial({
+    map: grassTexture,
+    bumpMap: bumpTexture,
+    bumpScale: 0.5, // Adjust the bump scale as needed
+  });
+
   floorShadow1 = new THREE.Mesh(new THREE.PlaneGeometry(floorRadius * 4, floorRadius * 2), new THREE.MeshPhongMaterial({
     color: 0x7abf8e,
     specular: 0x000000,
@@ -192,14 +232,12 @@ function createFloor() {
   floorShadow1.rotation.x = -Math.PI / 2;
   floorShadow1.receiveShadow = true;
 
-  floorGrass1 = new THREE.Mesh(new THREE.PlaneGeometry(floorRadius * 4, floorRadius * 2), new THREE.MeshBasicMaterial({
-    color: 0x7abf8e
-  }));
+  floorGrass1 = new THREE.Mesh(new THREE.PlaneGeometry(floorRadius * 4, floorRadius * 2), floorMaterial);
   floorGrass1.rotation.x = -Math.PI / 2;
   floorGrass1.receiveShadow = false;
 
   floor1 = new THREE.Group();
-  floor1.position.y = 0; // Set the position to zero for a flat plane
+  floor1.position.y = 0;
 
   floor1.add(floorShadow1);
   floor1.add(floorGrass1);
@@ -1103,24 +1141,78 @@ Fir = function() {
 
 var firs = new THREE.Group();
 
+
+// function createCottages() {
+//   if (!cottageModel) {
+//     console.error('Cottage model is not loaded yet');
+//     return;
+//   }
+
+//   var nCottages = 5; // Number of cottages
+//   var cottageSpacing = floorRadius * 4 / nCottages;
+//   var heroPathWidth = 20; // Width of the hero's path where cottages should not spawn
+
+//   for (var i = 0; i < nCottages; i++) {
+//     var cottage = cottageModel.clone();
+//     cottage.position.x = -floorRadius * 2 + i * cottageSpacing; // Distribute cottages along the x-axis
+//     cottage.position.y = 0; // Cottages on the floor
+    
+//     // Ensure cottages do not spawn in the hero's path
+//     var zPos;
+//     do {
+//       zPos = -floorRadius * 1.5 + Math.random() * floorRadius * 3;
+//     } while (Math.abs(zPos) < heroPathWidth / 2);
+
+//     cottage.position.z = zPos; // Set the z-position ensuring it is outside the hero's path
+//     floor1.add(cottage);
+
+//     var cottage2 = cottageModel.clone();
+//     cottage2.position.x = -floorRadius * 2 + i * cottageSpacing; // Distribute cottages along the x-axis
+//     cottage2.position.y = 0; // Cottages on the floor
+    
+//     // Ensure cottages do not spawn in the hero's path
+//     do {
+//       zPos = -floorRadius * 1.5 + Math.random() * floorRadius * 3;
+//     } while (Math.abs(zPos) < heroPathWidth / 2);
+
+//     cottage2.position.z = zPos; // Set the z-position ensuring it is outside the hero's path
+//     floor2.add(cottage2);
+//   }
+// }
+
 function createFirs(){
   var nTrees = 20; // Number of trees per floor segment
   var treeSpacing = floorRadius * 4 / nTrees;
-  
+  var heroPathWidth = 20; // Width of the hero's path where trees should not spawn
+
   for(var i=0; i< nTrees; i++){
     var tree1 = new Tree();
     tree1.mesh.position.x = -floorRadius * 2 + i * treeSpacing; // Distribute trees along the x-axis
     tree1.mesh.position.y = 0; // Trees on the floor
-    tree1.mesh.position.z = -floorRadius * 1.5 + Math.random() * floorRadius * 3; // Randomize z-position within bounds
-    floor1.add(tree1.mesh);
     
+    // Ensure trees do not spawn in the hero's path
+    var zPos;
+    do {
+      zPos = -floorRadius * 1.5 + Math.random() * floorRadius * 3;
+    } while (Math.abs(zPos) < heroPathWidth / 2);
+
+    tree1.mesh.position.z = zPos; // Set the z-position ensuring it is outside the hero's path
+    floor1.add(tree1.mesh);
+
     var tree2 = new Tree();
     tree2.mesh.position.x = -floorRadius * 2 + i * treeSpacing; // Distribute trees along the x-axis
     tree2.mesh.position.y = 0; // Trees on the floor
-    tree2.mesh.position.z = -floorRadius * 1.5 + Math.random() * floorRadius * 3; // Randomize z-position within bounds
+    
+    // Ensure trees do not spawn in the hero's path
+    do {
+      zPos = -floorRadius * 1.5 + Math.random() * floorRadius * 3;
+    } while (Math.abs(zPos) < heroPathWidth / 2);
+
+    tree2.mesh.position.z = zPos; // Set the z-position ensuring it is outside the hero's path
     floor2.add(tree2.mesh);
   }
 }
+
 
 
 function createCarrot(){
@@ -1256,7 +1348,7 @@ function updateLevel(){
 function loop(){
   delta = clock.getDelta();
   updateFloorRotation();
-  
+
   if (gameStatus == "play"){
     if (hero.status == "running"){
       hero.run();
@@ -1267,7 +1359,7 @@ function loop(){
     updateObstaclePosition();
     checkCollision();
   }
-  
+
   render();  
   requestAnimationFrame(loop);
 }
@@ -1286,15 +1378,20 @@ function init(event){
   createHero();
   // createMonster();
   createFirs();
+  createCottages(); 
   createCarrot();
   createBonusParticles();
   createObstacle();
   initUI();
   resetGame();
+
   loop();
   
   //setInterval(hero.blink.bind(hero), 3000);
 }
+
+
+
 
 function resetGame(){
   scene.add(hero.mesh);
