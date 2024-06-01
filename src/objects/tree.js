@@ -4,104 +4,149 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // Materials
 var blackMat = new THREE.MeshPhongMaterial({
-    color: 0x100707,
-    shading: THREE.FlatShading,
-  });
-  
-  var brownMat = new THREE.MeshPhongMaterial({
-    color: 0xb44b39,
-    shininess: 0,
-    shading: THREE.FlatShading,
-  });
-  
-  var greenMat = new THREE.MeshPhongMaterial({
-    color: 0x7abf8e,
-    shininess: 0,
-    shading: THREE.FlatShading,
-  });
-  
-  var pinkMat = new THREE.MeshPhongMaterial({
-    color: 0xdc5f45,//0xb43b29,//0xff5b49,
-    shininess: 0,
-    shading: THREE.FlatShading,
-  });
-  
-  var lightBrownMat = new THREE.MeshPhongMaterial({
-    color: 0xe07a57,
-    shading: THREE.FlatShading,
-  });
-  
-  var whiteMat = new THREE.MeshPhongMaterial({
-    color: 0xa49789,
-    shading: THREE.FlatShading,
-  });
-  var skinMat = new THREE.MeshPhongMaterial({
-    color: 0xff9ea5,
-    shading: THREE.FlatShading
-  });
-  
+  color: 0x100707,
+  flatShading: true,
+});
+
+var brownMat = new THREE.MeshPhongMaterial({
+  color: 0xb44b39,
+  shininess: 0,
+  flatShading: true,
+});
+
+var greenMat = new THREE.MeshPhongMaterial({
+  color: 0x7abf8e,
+  shininess: 0,
+  flatShading: true,
+});
+
+var pinkMat = new THREE.MeshPhongMaterial({
+  color: 0xdc5f45,//0xb43b29,//0xff5b49,
+  shininess: 0,
+  flatShading: true,
+});
+
+var lightBrownMat = new THREE.MeshPhongMaterial({
+  color: 0xe07a57,
+  flatShading: true,
+});
+
+var whiteMat = new THREE.MeshPhongMaterial({
+  color: 0xa49789,
+  flatShading: true,
+});
+var skinMat = new THREE.MeshPhongMaterial({
+  color: 0xff9ea5,
+  flatShading: true
+});
+
 
 function create_tree() {
-    var truncHeight = 50 + Math.random() * 150;
-    var topRadius = 1 + Math.random() * 5;
-    var bottomRadius = 5 + Math.random() * 5;
-    var mats = [blackMat, brownMat, pinkMat, whiteMat, greenMat, lightBrownMat, pinkMat];
-    var matTrunc = blackMat; //mats[Math.floor(Math.random()*mats.length)];
-    var nhSegments = 3; //Math.ceil(2 + Math.random()*6);
-    var nvSegments = 3; //Math.ceil(2 + Math.random()*6);
-    var geom = new THREE.CylinderGeometry(topRadius, bottomRadius, truncHeight, nhSegments, nvSegments);
-    geom.applyMatrix(new THREE.Matrix4().makeTranslation(0, truncHeight / 2, 0));
+  var truncHeight = 50 + Math.random() * 150;
+  var topRadius = 1 + Math.random() * 5;
+  var bottomRadius = 5 + Math.random() * 5;
+  var mats = [blackMat, brownMat, pinkMat, whiteMat, greenMat, lightBrownMat, pinkMat];
+  var matTrunc = blackMat; //mats[Math.floor(Math.random()*mats.length)];
+  var nhSegments = 3; //Math.ceil(2 + Math.random()*6);
+  var nvSegments = 3; //Math.ceil(2 + Math.random()*6);
 
-    this.mesh = new THREE.Mesh(geom, matTrunc);
+  var geom = new THREE.CylinderGeometry(topRadius, bottomRadius, truncHeight, nhSegments, nvSegments);
+  geom.applyMatrix4(new THREE.Matrix4().makeTranslation(0, truncHeight / 2, 0));
 
-    for (var i = 0; i < geom.vertices.length; i++) {
-        var noise = Math.random();
-        var v = geom.vertices[i];
-        v.x += -noise + Math.random() * noise * 2;
-        v.y += -noise + Math.random() * noise * 2;
-        v.z += -noise + Math.random() * noise * 2;
+  let mesh = new THREE.Mesh(geom, matTrunc);
 
-        geom.computeVertexNormals();
+  let vertices = geom.attributes.position
+  let vertex = new THREE.Vector3();
 
-        // FRUITS
-        if (Math.random() > .7) {
-            var size = Math.random() * 3;
-            var fruitGeometry = new THREE.CubeGeometry(size, size, size, 1);
-            var matFruit = mats[Math.floor(Math.random() * mats.length)];
-            var fruit = new THREE.Mesh(fruitGeometry, matFruit);
-            fruit.position.x = v.x;
-            fruit.position.y = v.y + 3;
-            fruit.position.z = v.z;
-            fruit.rotation.x = Math.random() * Math.PI;
-            fruit.rotation.y = Math.random() * Math.PI;
+  for (var i = 0; i < vertices.count; i++) {
 
-            this.mesh.add(fruit);
-        }
+    vertex.fromBufferAttribute(vertices, i);
 
-        // BRANCHES
-        if (Math.random() > .5 && v.y > 10 && v.y < truncHeight - 10) {
-            var h = 3 + Math.random() * 5;
-            var thickness = .2 + Math.random();
+    var noise = Math.random();
 
-            var branchGeometry = new THREE.CylinderGeometry(thickness / 2, thickness, h, 3, 1);
-            branchGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(0, h / 2, 0));
-            var branch = new THREE.Mesh(branchGeometry, matTrunc);
-            branch.position.x = v.x;
-            branch.position.y = v.y;
-            branch.position.z = v.z;
+    vertex.x += -noise + Math.random() * noise * 2;
+    vertex.y += -noise + Math.random() * noise * 2;
+    vertex.z += -noise + Math.random() * noise * 2;
 
-            var vec = new THREE.Vector3(v.x, 2, v.z);
-            var axis = new THREE.Vector3(0, 1, 0);
-            branch.quaternion.setFromUnitVectors(axis, vec.clone().normalize());
+    vertices.setXYZ(i, vertex.x, vertex.y, vertex.z);
 
+    geom.computeVertexNormals();
 
-            this.mesh.add(branch);
-        }
+    // FRUITS
+    if (Math.random() > .7) {
+      var size = Math.random() * 3;
+      var fruitGeometry = new THREE.BoxGeometry(size, size, size, 1);
+      var matFruit = mats[Math.floor(Math.random() * mats.length)];
+      var fruit = new THREE.Mesh(fruitGeometry, matFruit);
+      fruit.position.x = vertex.x;
+      fruit.position.y = vertex.y + 3;
+      fruit.position.z = vertex.z;
+      fruit.rotation.x = Math.random() * Math.PI;
+      fruit.rotation.y = Math.random() * Math.PI;
 
+      mesh.add(fruit);
     }
 
-    this.mesh.castShadow = true;
+    // BRANCHES
+    if (Math.random() > .5 && vertex.y > 10 && vertex.y < truncHeight - 10) {
+      var h = 3 + Math.random() * 5;
+      var thickness = .2 + Math.random();
+
+      var branchGeometry = new THREE.CylinderGeometry(thickness / 2, thickness, h, 3, 1);
+      branchGeometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, h / 2, 0));
+      var branch = new THREE.Mesh(branchGeometry, matTrunc);
+      branch.position.x = vertex.x;
+      branch.position.y = vertex.y;
+      branch.position.z = vertex.z;
+
+      var vec = new THREE.Vector3(vertex.x, 2, vertex.z);
+      var axis = new THREE.Vector3(0, 1, 0);
+      branch.quaternion.setFromUnitVectors(axis, vec.clone().normalize());
+
+
+      mesh.add(branch);
+    }
+
+  }
+
+  mesh.castShadow = true;
+
+  // mesh.position.y += truncHeight / 2
+  mesh.position.y = 0
+
+  return mesh
 }
 
+function create_forest(nTrees, floorWidth, floorHeight,offset, scene=0) {
+  // let treeSpacing = floorWidth / nTrees
 
-export { create_tree}
+  let limit=0.019 * floorHeight
+
+  for (var i = 0; i < nTrees; i++) {
+    var tree = create_tree()
+
+    // tree.position.x = -floorWidth + i * treeSpacing; // Distribute trees along the x-axis
+
+    tree.position.y = 0; // Trees on the floor 
+
+
+    let z
+    do {
+      z = Math.random() * floorHeight - floorHeight / 2;
+    }while(Math.abs(z-offset) < limit)
+
+    tree.position.z = z
+
+
+    tree.position.x = Math.random() * floorWidth - floorWidth / 2;
+
+    tree.rotation.x = Math.random()/10
+    tree.rotation.z = Math.random()/10
+    tree.rotation.y = Math.random()
+
+
+    scene.add(tree)
+  }
+}
+
+export { create_tree, create_forest }

@@ -24,8 +24,8 @@ class SkyBox {
         skyUniforms['mieDirectionalG'].value = 0.8;
 
         this.parameters = {
-            elevation: 10,
-            azimuth: 180
+            elevation: 7,
+            azimuth: 123
         };
 
         this.sky = sky
@@ -64,17 +64,18 @@ class SkyBox {
         let light = new THREE.Group()
 
 
-        this.hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 1.5);
+        this.hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 1);
         this.hemiLight.color.setHSL(0.6, 1, 0.6);
         this.hemiLight.groundColor.setHSL(0.095, 1, 0.75);
 
         light.add(this.hemiLight);
 
 
-        this.globalLight = new THREE.AmbientLight(0xffffff, 1.5);
+        this.globalLight = new THREE.AmbientLight(0xffffff, 1);
+        this.globalLight.color.setHSL(0.1, 1, 0.95);
         light.add(this.globalLight);
 
-        this.dirLight = new THREE.DirectionalLight(0xffffff, 2);
+        this.dirLight = new THREE.DirectionalLight(0xffffff, 5);
         this.dirLight.color.setHSL(0.1, 1, 0.95);
 
         this.dirLight.castShadow = true;
@@ -82,7 +83,7 @@ class SkyBox {
         this.dirLight.shadow.mapSize.width = 4096;
         this.dirLight.shadow.mapSize.height = 4096;
 
-        const d = 600;
+        const d = 800;
 
         this.dirLight.shadow.camera.left = - d;
         this.dirLight.shadow.camera.right = d;

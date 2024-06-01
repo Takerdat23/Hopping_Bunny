@@ -45,7 +45,7 @@ class Game {
         this.collisionObstacle = 10;
         this.collisionBonus = 20;
         this.gameStatus = "play";
-        this.cameraPosGame = 200;
+        this.cameraPosGame = 100;
         this.cameraPosGameOver = 260;
         this.monsterAcceleration = 0.004;
         this.malusClearColor = 0xb44b39;
@@ -86,10 +86,10 @@ class Game {
             this.farPlane
         );
 
-        this.camera.position.x = 0;
-        this.camera.position.z = this.cameraPosGame;
+        this.camera.position.x = -90;
+        this.camera.position.z = 100;
         this.camera.position.y = 30;
-        this.camera.lookAt(new THREE.Vector3(0, 30, 0));
+        this.camera.lookAt(new THREE.Vector3(0, 100, 0));
 
         this.renderer = new THREE.WebGLRenderer({
             alpha: true,

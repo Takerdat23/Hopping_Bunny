@@ -3,11 +3,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { grassTexture, bumpTexture } from '../textures.js'
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 
-import { get_polygon_tree_pack } from '../models.js';
+import { get_polygon_tree_pack, getCottage } from '../models.js';
 
-
-
-
+import { create_tree, create_forest } from './tree.js'
 
 class Floor {
     constructor(floorRadius, width_multiplier = 4, height_multiplier = 3) {
@@ -17,10 +15,13 @@ class Floor {
 
 
         this.widthSegments = 20
-        this.heightSegments = 10
+        this.heightSegments = 20
+
+        this.floorWidth = floorRadius * width_multiplier
+        this.floorHeight = floorRadius * height_multiplier
 
         // let floorGeometry = new THREE.PlaneGeometry(floorRadius * 4, floorRadius * 4);
-        let floorGeometry = new THREE.PlaneGeometry(floorRadius * width_multiplier, floorRadius * height_multiplier, this.widthSegments, this.heightSegments);
+        let floorGeometry = new THREE.PlaneGeometry(this.floorWidth, this.floorHeight, this.widthSegments, this.heightSegments);
 
         this.original_pos = floorGeometry.attributes.position.clone()
 
@@ -40,19 +41,23 @@ class Floor {
         floor.receiveShadow = true;
         floor.castShadow = true;
 
-        floor.position.y = 0;
-        floor.position.x = 0;
-        floor.position.z = - floorRadius / 2;
 
-        this.obj = floor
+        this.floor = floor
+
+        this.obj = new THREE.Group()
+
+        this.obj.add(floor)
 
         this.objs_holder = new THREE.Group()
-        
+
         this.obj.add(this.objs_holder)
+        
+        this.offset = floorRadius
+        this.obj.position.z -= this.offset
+
 
         this.regenerateFloor()
     }
-
 
     regenerateFloor() {
         this.clear_scene()
@@ -69,7 +74,7 @@ class Floor {
 
             vertex.x += Math.random() * 20 - 10;
             vertex.y += Math.random() * 20 - 10;
-            vertex.z += Math.random() *20-5;
+            vertex.z += Math.random() * 16 - 8;
 
             position.setXYZ(i, vertex.x, vertex.y, vertex.z);
 
@@ -108,14 +113,14 @@ class Floor {
         }
     }
 
-    get_height(x, z, include_children=false) {
+    get_height(x, z, include_children = false) {
         // get height of plane
         // children are ignored
         var ray = new THREE.Raycaster();
         var rayPos = new THREE.Vector3();
 
         // Use y = 100 to ensure ray starts above terran
-        let topy = 50
+        let topy = 150
 
         rayPos.set(x, topy, z);
         var rayDir = new THREE.Vector3(0, -1, 0); // Ray points down
@@ -124,9 +129,11 @@ class Floor {
         ray.set(rayPos, rayDir);
 
         // Check where it intersects terrain Mesh
-        let intersect = ray.intersectObject(this.obj, include_children);
+        let intersect = ray.intersectObject(this.floor, include_children);
+
 
         if (intersect.length == 1) {
+            // console.log(intersect)
 
             let height = topy - intersect[0].distance
 
@@ -136,23 +143,49 @@ class Floor {
     }
 
     populate_objects() {
-        let tree = get_polygon_tree_pack()
-        this.objs_holder.add(tree)
+        // let cot = getCottage()
+        // this.objs_holder.add(cot)
 
-        let {x, y, z} = tree.getWorldPosition(new THREE.Vector3())
+        // cot.rotation.x=Math.PI/2
+        // cot.position.x=0
+        // cot.position.z=0
+        // cot.position.y=100
 
-        let h = this.get_height(x, z)
-        
-        tree.position.y+=h
-        
+        // let tree = create_tree()
+        // this.objs_holder.add(tree)
 
-        tree.traverse(function (object) {
-            if (object instanceof THREE.Mesh) {
-                object.castShadow = true;
-                object.receiveShadow = true;
+        // console.log(tree.position)
 
+        create_forest(
+            50, this.floorWidth, this.floorHeight,this.offset, this.objs_holder
+        )
+
+
+        // // TODO: fix this function
+        this.elevate_objects()
+
+        // this.objs_holder.traverse(function (object) {
+        //     if (object instanceof THREE.Mesh) {
+        //         object.castShadow = true;
+        //         object.receiveShadow = true;
+
+        //     }
+        // });
+    }
+
+    elevate_objects() {
+        for (var i = this.objs_holder.children.length - 1; i >= 0; i--) {
+            let obj = this.objs_holder.children[i];
+
+            let { x, y, z } = obj.getWorldPosition(new THREE.Vector3())
+
+            let h = this.get_height(x, z)
+
+            if (h != undefined) {
+                obj.position.y += h - 1
             }
-        });
+
+        }
     }
 
     clear_scene() {
@@ -164,55 +197,60 @@ class Floor {
 
 }
 
+const rotate = (arr, count = 1) => {
+    return [...arr.slice(count, arr.length), ...arr.slice(0, count)];
+};
+
 class SlidingFloor {
-    constructor(floorRadius, width_multiplier = 5, height_multiplier = 3) {
+    constructor(floorRadius, width_multiplier = 4, height_multiplier = 4) {
         this.floorRadius = floorRadius
         this.width_multiplier = width_multiplier
         this.height_multiplier = height_multiplier
 
-        this.floor1 = new Floor(floorRadius, width_multiplier, height_multiplier)
-
-        this.floor2 = new Floor(floorRadius, width_multiplier, height_multiplier)
-
-        this.floor2.obj.position.x = this.floorRadius * width_multiplier
-
         this.obj = new THREE.Group();
-        this.obj.add(this.floor1.obj)
-        this.obj.add(this.floor2.obj)
 
+        this.floors = []
 
-        this.floor2.fuse(this.floor1)
+        this.N = 5
+
+        for (let i = 0; i < this.N; i++) {
+            this.floors.push(new Floor(floorRadius, width_multiplier, height_multiplier))
+            this.floors[i].obj.position.x = this.floorRadius * width_multiplier * i
+
+            if (i != 0) {
+                this.floors[i].fuse(this.floors[i - 1])
+            }
+
+            this.obj.add(this.floors[i].obj)
+        }
+
+        this.floors[0].fuse(this.floors[this.N - 1])
+
     }
     update(delta, speed) {
-        let new_x_pos1 = this.floor1.obj.position.x - speed * delta * 10
-        let new_x_pos2 = this.floor2.obj.position.x - speed * delta * 10
 
-
-        // reset position if floor is out of view
-        if (new_x_pos1 <= -this.floorRadius * this.width_multiplier) {
-            new_x_pos1 = new_x_pos2 + this.floorRadius * this.width_multiplier;
-            this.floor1.regenerateFloor()
-
-
-            this.floor1.fuse(this.floor2)
-
-        }
-        if (new_x_pos2 <= -this.floorRadius * this.width_multiplier) {
-            new_x_pos2 = new_x_pos1 + this.floorRadius * this.width_multiplier;
-            this.floor2.regenerateFloor()
-
-            this.floor2.fuse(this.floor1)
-
+        for (let i = 0; i < this.N; i++) {
+            this.floors[i].obj.position.x = this.floors[i].obj.position.x - speed * delta * 10
         }
 
-        this.floor1.obj.position.x = new_x_pos1
-        this.floor2.obj.position.x = new_x_pos2
+        // reset position if the first floor is out of view
+        if (this.floors[0].obj.position.x < -this.floorRadius * this.width_multiplier) {
+            this.floors[0].obj.position.x = this.floors[this.N - 1].obj.position.x + this.floorRadius * this.width_multiplier
+            
+            this.floors[0].fuse(this.floors[this.N - 1])
+
+            // roll the array
+            this.floors = rotate(this.floors, 1)
+
+        }
     }
 
     get_height(x, z) {
-
-        let height = this.floor1.get_height(x, z)
-        if (height == undefined) height = this.floor2.get_height(x, z)
+        let height
+        for (let i = 0; i < this.N; i++){
+            height = this.floors[i].get_height(x, z)
+            if (height != undefined)break
+        }
 
         return height
     }

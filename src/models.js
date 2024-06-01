@@ -17,23 +17,33 @@ function get_polygon_tree_pack(id=-1){
 
     let obj = polygon_tree_pack_models.children[id].clone()
     obj.scale.set(10, 10, 10);
-    obj.rotation.x=Math.PI/2
+    obj.position.set(0, 0, 0);
+
+    // obj.rotation.x=Math.PI/2
 
 
     let box = new THREE.Box3().setFromObject(obj)
     
-    let z = box.getSize(new THREE.Vector3()).z
+    let y = box.getSize(new THREE.Vector3()).y
     
-    obj.position.z=z/2
+    obj.position.y= y/2
 
-    let re = new THREE.Group()
-    re.add(obj)
-    return re
+    // let re = new THREE.Group()
+    // re.add(obj)
+    return obj
 }
 
 
 
 let HeroModel = await gltfLoader.loadAsync("https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Fox/glTF/Fox.gltf")
 
+let CottageModel = await gltfLoader.loadAsync("models/cottage/scene.gltf")
 
-export { get_polygon_tree_pack, HeroModel }
+
+function getCottage(){
+    let obj = CottageModel.scene.clone()
+    obj.scale.set(30,30, 30)
+
+    return obj
+}
+export { get_polygon_tree_pack, HeroModel, getCottage }

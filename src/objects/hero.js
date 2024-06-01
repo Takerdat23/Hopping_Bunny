@@ -95,12 +95,19 @@ class Hero {
 
     update(delta, speed, terrain_height) {
         // console.log(perlin.noise)
-        let m_delta = speed * delta / 7
 
-        let t = perlin.noise(m_delta, 1,Math.random()/1000)
+
+        if (speed < 8) {
+            this.walking()
+        } else {
+            this.running()
+        }
+        let m_delta = speed * delta / 6
+
+        let t = perlin.noise(m_delta, 1, Math.random() / 1000)
         if (this.mixer) { this.mixer.update(t); }
 
-        this.obj.position.y = terrain_height
+        this.obj.position.y = this.obj.position.y * 0.6 + terrain_height * 0.4
 
         // this.obj.position.y += 0.1
 
