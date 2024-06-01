@@ -1,9 +1,11 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 import * as TWEEN from 'tween'
 
 import { HeroModel } from '../models.js';
+const perlin = new ImprovedNoise();
 
 class Hero {
     constructor() {
@@ -92,10 +94,13 @@ class Hero {
     }
 
     update(delta, speed, terrain_height) {
+        // console.log(perlin.noise)
         let m_delta = speed * delta / 7
-        if (this.mixer) { this.mixer.update(m_delta); }
 
-        this.obj.position.y = terrain_height+0.5
+        let t = perlin.noise(m_delta, 1,Math.random()/1000)
+        if (this.mixer) { this.mixer.update(t); }
+
+        this.obj.position.y = terrain_height
 
         // this.obj.position.y += 0.1
 

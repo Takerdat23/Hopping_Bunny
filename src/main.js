@@ -1,5 +1,7 @@
 
 import * as THREE from 'three'
+import * as dat from 'dat'
+
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // import { Constraint } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -10,16 +12,11 @@ import { Sky } from 'three/addons/objects/Sky.js';
 import { SlidingFloor } from './objects/floor.js';
 import { Hero } from './objects/hero.js'
 
-import { get_tree } from './models.js';
+import { get_polygon_tree_pack } from './models.js';
 
+import { SkyBox } from './sky.js';
 
-function Cone(r, h, rs, color) {
-    let geometry = new THREE.ConeGeometry(r, h, rs);
-    let material = new THREE.MeshPhongMaterial({ color: color });
-    let mesh = new THREE.Mesh(geometry, material);
-    mesh.castShadow = true
-    return mesh
-}
+THREE.ColorManagement.enabled = false; // TODO: Confirm correct color management.
 
 class Game {
     constructor() {
@@ -31,6 +28,8 @@ class Game {
         this.update()
     }
     initParams() {
+        this.gui = new dat.GUI()
+
         this.delta = 0;
         this.floorRadius = 200;
         this.speed = 10;
@@ -69,8 +68,12 @@ class Game {
             y: 0
         };
 
+        this.gui.add(this, 'speed', 0, 100)
+
     }
     initScreenAnd3D() {
+
+
         this.scene = new THREE.Scene();
 
         // Add exponential fog to the scene with a lower density for a more gradual effect
@@ -97,7 +100,7 @@ class Game {
         // this.renderer.setClearColor(this.malusClearColor, this.malusClearAlpha);
         this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1;
+        this.renderer.toneMappingExposure = 0.5;
 
 
 
@@ -117,7 +120,6 @@ class Game {
         // document.addEventListener("touchend", this.onMouseDown.bind(this), false);
 
         this.clock = new THREE.Clock();
-
     }
 
     onMouseDown(e) {
@@ -125,35 +127,26 @@ class Game {
         console.log(e)
     }
 
-    createSky(elevation = 2, azimuth = 180) {
+    createSky() {
 
-        let sun = new THREE.Vector3();
+        this.skyb = new SkyBox()
 
-        const sky = new Sky();
-        sky.scale.setScalar(10000);
+        this.scene.add(this.skyb.obj)
 
-        // scene.add( sky );
+        var folder1 = this.gui.addFolder("sun");
 
-        const skyUniforms = sky.material.uniforms;
+        folder1.add(this.skyb.parameters, 'elevation', 0, 90, 0.1).onChange(
+            this.skyb.updateSun.bind(this.skyb)
+        )
+        folder1.add(this.skyb.parameters, 'azimuth', - 180, 180, 0.1).onChange(
+            this.skyb.updateSun.bind(this.skyb)
+        )
 
-        skyUniforms['turbidity'].value = 10;
-        skyUniforms['rayleigh'].value = 2;
-        skyUniforms['mieCoefficient'].value = 0.005;
-        skyUniforms['mieDirectionalG'].value = 0.8;
+        folder1.open()
 
-        const phi = THREE.MathUtils.degToRad(90 - elevation);
-        const theta = THREE.MathUtils.degToRad(azimuth);
-
-        sun.setFromSphericalCoords(1, phi, theta);
-
-        sky.material.uniforms['sunPosition'].value.copy(sun);
-
-        this.scene.add(sky)
     }
 
     createObjects() {
-        this.createLights()
-
         this.createSky()
 
         // create floor
@@ -164,47 +157,6 @@ class Game {
         this.hero = new Hero()
         this.floor.obj.add(this.hero.obj)
 
-        let tree = get_tree()
-
-        this.floor.floor1.obj.add(tree)
-
-    }
-
-    createLights() {
-
-
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
-        hemiLight.color.setHSL(0.6, 1, 0.6);
-        hemiLight.groundColor.setHSL(0.095, 1, 0.75);
-        hemiLight.position.set(0, 50, 0);
-        this.scene.add(hemiLight);
-
-
-        this.globalLight = new THREE.AmbientLight(0xffffff, 2);
-        // this.scene.add(this.globalLight);
-
-        const dirLight = new THREE.DirectionalLight( 0xffffff, 2 );
-        dirLight.color.setHSL( 0.1, 1, 0.95 );
-        dirLight.position.set( - 1, 1.75, 1 );
-        dirLight.position.multiplyScalar( 30 );
-        // this.scene.add( dirLight );
-
-        dirLight.castShadow = true;
-
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-
-        const d = 50;
-
-        dirLight.shadow.camera.left = - d;
-        dirLight.shadow.camera.right = d;
-        dirLight.shadow.camera.top = d;
-        dirLight.shadow.camera.bottom = - d;
-
-        dirLight.shadow.camera.far = 3500;
-        dirLight.shadow.bias = - 0.0001;
-        
-        this.scene.add(dirLight);
 
     }
 
@@ -215,18 +167,18 @@ class Game {
 
         this.controls.update();
 
-        
+
         this.floor.update(delta, this.speed)
-        
+
         // update hero position on the floor
         // hero has a fix position of x=0 and z=0
         // y is the height
         // this.hero.obj.position.y=100
-        
-        let terrain_height = this.floor.get_height(0,0)
+
+        let terrain_height = this.floor.get_height(0, 0)
         // console.log(height);
         // this.hero.obj.position.y=terrain_height + 1
-        
+
         this.hero.update(delta, this.speed, terrain_height)
 
         requestAnimationFrame(this.update.bind(this))

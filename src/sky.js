@@ -5,115 +5,98 @@ import Stats from 'three/addons/libs/stats.module.js';
 
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { Water } from 'three/addons/objects/Water.js';
+
 import { Sky } from 'three/addons/objects/Sky.js';
 
-THREE.ColorManagement.enabled = false; // TODO: Confirm correct color management.
 
-let container, stats;
-let camera, scene, renderer;
-let controls, water, sun, mesh;
+class SkyBox {
+    constructor() {
 
-init();
-animate();
+        let sun = new THREE.Vector3();
 
-function createSky(elevation=2, azimuth=180) {
+        let sky = new Sky();
+        sky.scale.setScalar(10000);
 
-    sun = new THREE.Vector3();
+        const skyUniforms = sky.material.uniforms;
+        skyUniforms['turbidity'].value = 10;
+        skyUniforms['rayleigh'].value = 2;
+        skyUniforms['mieCoefficient'].value = 0.005;
+        skyUniforms['mieDirectionalG'].value = 0.8;
 
-    const sky = new Sky();
-    sky.scale.setScalar( 10000 );
+        this.parameters = {
+            elevation: 10,
+            azimuth: 180
+        };
 
-    // scene.add( sky );
+        this.sky = sky
+        this.sun = sun
 
-    const skyUniforms = sky.material.uniforms;
 
-    skyUniforms[ 'turbidity' ].value = 10;
-    skyUniforms[ 'rayleigh' ].value = 2;
-    skyUniforms[ 'mieCoefficient' ].value = 0.005;
-    skyUniforms[ 'mieDirectionalG' ].value = 0.8;
+        this.obj = new THREE.Group()
 
-    const phi = THREE.MathUtils.degToRad( 90 - elevation );
-    const theta = THREE.MathUtils.degToRad( azimuth );
+        this.obj.add(this.sky)
 
-    sun.setFromSphericalCoords( 1, phi, theta );
+        let lights = this.getLights()
 
-    sky.material.uniforms[ 'sunPosition' ].value.copy( sun );
+        this.obj.add(lights)
+        this.updateSun()
+    }
 
-    
-    updateSun();
+    updateSun() {
+        let phi = THREE.MathUtils.degToRad(90 - this.parameters.elevation);
+        let theta = THREE.MathUtils.degToRad(this.parameters.azimuth);
 
-    //
+        this.sun.setFromSphericalCoords(1, phi, theta);
 
-    const geometry = new THREE.BoxGeometry( 30, 30, 30 );
-    const material = new THREE.MeshStandardMaterial( { roughness: 0 } );
+        this.sky.material.uniforms['sunPosition'].value.copy(this.sun);
 
-    mesh = new THREE.Mesh( geometry, material );
-    scene.add( mesh );
+        let { x, y, z } = this.sun
 
-    //
+        this.hemiLight.position.set(x, y, z)
+        this.hemiLight.position.multiplyScalar(-100)
 
-    controls = new OrbitControls( camera, renderer.domElement );
-    controls.maxPolarAngle = Math.PI * 0.495;
-    controls.target.set( 0, 10, 0 );
-    controls.minDistance = 40.0;
-    controls.maxDistance = 200.0;
-    controls.update();
 
-    //
+        this.dirLight.position.set(x, y, z)
+        this.dirLight.position.multiplyScalar(200)
+    }
 
-    stats = new Stats();
-    container.appendChild( stats.dom );
+    getLights() {
+        let light = new THREE.Group()
 
-    // GUI
 
-    const gui = new GUI();
+        this.hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 1.5);
+        this.hemiLight.color.setHSL(0.6, 1, 0.6);
+        this.hemiLight.groundColor.setHSL(0.095, 1, 0.75);
 
-    const folderSky = gui.addFolder( 'Sky' );
-    folderSky.add( parameters, 'elevation', 0, 90, 0.1 ).onChange( updateSun );
-    folderSky.add( parameters, 'azimuth', - 180, 180, 0.1 ).onChange( updateSun );
-    folderSky.open();
+        light.add(this.hemiLight);
 
-    const waterUniforms = water.material.uniforms;
 
-    const folderWater = gui.addFolder( 'Water' );
-    folderWater.add( waterUniforms.distortionScale, 'value', 0, 8, 0.1 ).name( 'distortionScale' );
-    folderWater.add( waterUniforms.size, 'value', 0.1, 10, 0.1 ).name( 'size' );
-    folderWater.open();
+        this.globalLight = new THREE.AmbientLight(0xffffff, 1.5);
+        light.add(this.globalLight);
 
-    //
+        this.dirLight = new THREE.DirectionalLight(0xffffff, 2);
+        this.dirLight.color.setHSL(0.1, 1, 0.95);
 
-    window.addEventListener( 'resize', onWindowResize );
+        this.dirLight.castShadow = true;
 
-}
+        this.dirLight.shadow.mapSize.width = 4096;
+        this.dirLight.shadow.mapSize.height = 4096;
 
-function onWindowResize() {
+        const d = 600;
 
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
+        this.dirLight.shadow.camera.left = - d;
+        this.dirLight.shadow.camera.right = d;
+        this.dirLight.shadow.camera.top = 200;
+        this.dirLight.shadow.camera.bottom = -100;
 
-    renderer.setSize( window.innerWidth, window.innerHeight );
+        this.dirLight.shadow.camera.far = 3500;
+        this.dirLight.shadow.radius = 0.1;
 
-}
+        light.add(this.dirLight);
 
-function animate() {
+        return light
+    }
 
-    requestAnimationFrame( animate );
-    render();
-    stats.update();
 
 }
-
-function render() {
-
-    const time = performance.now() * 0.001;
-
-    mesh.position.y = Math.sin( time ) * 20 + 5;
-    mesh.rotation.x = time * 0.5;
-    mesh.rotation.z = time * 0.51;
-
-    water.material.uniforms[ 'time' ].value += 1.0 / 60.0;
-
-    renderer.render( scene, camera );
-
-}
+export { SkyBox }
