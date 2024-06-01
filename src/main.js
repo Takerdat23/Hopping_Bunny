@@ -3,9 +3,12 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // import { Constraint } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { Sky } from 'three/addons/objects/Sky.js';
 
-import { Floor } from './floor.js';
-import {Hero} from './characters/hero.js'
+import { SlidingFloor } from './objects/floor.js';
+import { Hero } from './objects/hero.js'
+
+import { get_tree } from './models.js';
 
 function Cone(r, h, rs, color) {
     let geometry = new THREE.ConeGeometry(r, h, rs);
@@ -27,7 +30,7 @@ class Game {
     initParams() {
         this.delta = 0;
         this.floorRadius = 200;
-        this.moving_speed = 10;
+        this.speed = 10;
         this.distance = 0;
         this.level = 1;
         this.levelInterval;
@@ -68,7 +71,7 @@ class Game {
         this.scene = new THREE.Scene();
 
         // Add exponential fog to the scene with a lower density for a more gradual effect
-        this.scene.fog = new THREE.FogExp2(0xffffff, 0.0025); // Adjust the density value to make the fog more appropriate
+        // this.scene.fog = new THREE.FogExp2(0xffffff, 0.0025); // Adjust the density value to make the fog more appropriate
 
         this.camera = new THREE.PerspectiveCamera(
             this.fieldOfView,
@@ -87,7 +90,13 @@ class Game {
             antialias: true
         });
         this.renderer.setPixelRatio(window.devicePixelRatio);
-        this.renderer.setClearColor(this.malusClearColor, this.malusClearAlpha);
+
+        // this.renderer.setClearColor(this.malusClearColor, this.malusClearAlpha);
+        this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1;
+
+
 
         this.renderer.setSize(this.WIDTH, this.HEIGHT);
         this.renderer.shadowMap.enabled = true;
@@ -96,7 +105,7 @@ class Game {
         this.container.appendChild(this.renderer.domElement);
 
         // remove later
-        this.controls = new OrbitControls( this.camera, this.renderer.domElement );
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.update();
 
 
@@ -105,6 +114,7 @@ class Game {
         // document.addEventListener("touchend", this.onMouseDown.bind(this), false);
 
         this.clock = new THREE.Clock();
+
     }
 
     onMouseDown(e) {
@@ -112,59 +122,102 @@ class Game {
         console.log(e)
     }
 
-    createObjects(){
+    createSky(elevation = 2, azimuth = 180) {
+
+        let sun = new THREE.Vector3();
+
+        const sky = new Sky();
+        sky.scale.setScalar(10000);
+
+        // scene.add( sky );
+
+        const skyUniforms = sky.material.uniforms;
+
+        skyUniforms['turbidity'].value = 10;
+        skyUniforms['rayleigh'].value = 2;
+        skyUniforms['mieCoefficient'].value = 0.005;
+        skyUniforms['mieDirectionalG'].value = 0.8;
+
+        const phi = THREE.MathUtils.degToRad(90 - elevation);
+        const theta = THREE.MathUtils.degToRad(azimuth);
+
+        sun.setFromSphericalCoords(1, phi, theta);
+
+        sky.material.uniforms['sunPosition'].value.copy(sun);
+
+        this.scene.add(sky)
+    }
+
+    createObjects() {
         this.createLights()
 
-        // create floor
-        this.floor1 = new Floor(this.floorRadius, this.moving_speed)
-        this.floor1.obj.name="floor2"
-        this.scene.add(this.floor1.obj)
+        this.createSky()
 
-        this.floor2 = new Floor(this.floorRadius, this.moving_speed)
-        this.floor2.obj.position.x = this.floorRadius * 4
-        this.floor2.obj.name="floor2"
-        this.scene.add(this.floor2.obj)
+        // create floor
+        this.floor = new SlidingFloor(this.floorRadius)
+
+        this.scene.add(this.floor.obj)
 
         this.hero = new Hero()
-        this.scene.add(this.hero.obj)
+        this.floor.obj.add(this.hero.obj)
+
+        let tree = get_tree()
+
+        this.floor.floor1.obj.add(tree)
+
     }
 
     createLights() {
-        this.globalLight = new THREE.AmbientLight(0xffffff, .9);
 
-        let shadowLight = new THREE.DirectionalLight(0xffffff, 1);
-        shadowLight.position.set(-30, 40, 20);
-        shadowLight.castShadow = true;
-        shadowLight.shadow.camera.left = -400;
-        shadowLight.shadow.camera.right = 400;
-        shadowLight.shadow.camera.top = 400;
-        shadowLight.shadow.camera.bottom = -400;
-        shadowLight.shadow.camera.near = 1;
-        shadowLight.shadow.camera.far = 2000;
-        shadowLight.shadow.mapSize.width = shadowLight.shadow.mapSize.height = 2048;
 
-        this.shadowLight = shadowLight
-        this.scene.add(this.globalLight);
-        this.scene.add(shadowLight);
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+        hemiLight.color.setHSL(0.6, 1, 0.6);
+        hemiLight.groundColor.setHSL(0.095, 1, 0.75);
+        hemiLight.position.set(0, 50, 0);
+        this.scene.add(hemiLight);
+
+
+        this.globalLight = new THREE.AmbientLight(0xffffff, 2);
+        // this.scene.add(this.globalLight);
+
+        const dirLight = new THREE.DirectionalLight( 0xffffff, 2 );
+        dirLight.color.setHSL( 0.1, 1, 0.95 );
+        dirLight.position.set( - 1, 1.75, 1 );
+        dirLight.position.multiplyScalar( 30 );
+        // this.scene.add( dirLight );
+
+        dirLight.castShadow = true;
+
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+
+        const d = 50;
+
+        dirLight.shadow.camera.left = - d;
+        dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d;
+        dirLight.shadow.camera.bottom = - d;
+
+        dirLight.shadow.camera.far = 3500;
+        dirLight.shadow.bias = - 0.0001;
+        
+        this.scene.add(dirLight);
 
     }
 
-    update(){
+    update() {
         let delta = this.clock.getDelta();
         // the game loop
         this.renderer.render(this.scene, this.camera)
 
         this.controls.update();
 
-        this.hero.update(delta)
+        this.hero.update(delta, this.speed)
 
-        this.floor1.update(delta)
-        this.floor2.update(delta)
+        this.floor.update(delta, this.speed)
 
         requestAnimationFrame(this.update.bind(this))
     }
-
-
 
 }
 
