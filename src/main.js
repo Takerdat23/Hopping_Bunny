@@ -3,12 +3,15 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // import { Constraint } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as TWEEN from 'tween'
+
 import { Sky } from 'three/addons/objects/Sky.js';
 
 import { SlidingFloor } from './objects/floor.js';
 import { Hero } from './objects/hero.js'
 
 import { get_tree } from './models.js';
+
 
 function Cone(r, h, rs, color) {
     let geometry = new THREE.ConeGeometry(r, h, rs);
@@ -43,7 +46,7 @@ class Game {
         this.collisionObstacle = 10;
         this.collisionBonus = 20;
         this.gameStatus = "play";
-        this.cameraPosGame = 160;
+        this.cameraPosGame = 200;
         this.cameraPosGameOver = 260;
         this.monsterAcceleration = 0.004;
         this.malusClearColor = 0xb44b39;
@@ -59,7 +62,7 @@ class Game {
         this.aspectRatio = this.WIDTH / this.HEIGHT;
         this.fieldOfView = 50;
         this.nearPlane = 1;
-        this.farPlane = 2000;
+        this.farPlane = 10000;
 
         this.mousePos = {
             x: 0,
@@ -71,7 +74,7 @@ class Game {
         this.scene = new THREE.Scene();
 
         // Add exponential fog to the scene with a lower density for a more gradual effect
-        // this.scene.fog = new THREE.FogExp2(0xffffff, 0.0025); // Adjust the density value to make the fog more appropriate
+        this.scene.fog = new THREE.FogExp2(0xffffff, 0.001); // Adjust the density value to make the fog more appropriate
 
         this.camera = new THREE.PerspectiveCamera(
             this.fieldOfView,
@@ -212,9 +215,19 @@ class Game {
 
         this.controls.update();
 
-        this.hero.update(delta, this.speed)
-
+        
         this.floor.update(delta, this.speed)
+        
+        // update hero position on the floor
+        // hero has a fix position of x=0 and z=0
+        // y is the height
+        // this.hero.obj.position.y=100
+        
+        let terrain_height = this.floor.get_height(0,0)
+        // console.log(height);
+        // this.hero.obj.position.y=terrain_height + 1
+        
+        this.hero.update(delta, this.speed, terrain_height)
 
         requestAnimationFrame(this.update.bind(this))
     }

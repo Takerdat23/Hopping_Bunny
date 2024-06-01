@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+import * as TWEEN from 'tween'
 
 import { HeroModel } from '../models.js';
 
@@ -90,9 +91,21 @@ class Hero {
         this.state = "walking"
     }
 
-    update(delta, speed) {
+    update(delta, speed, terrain_height) {
         let m_delta = speed * delta / 7
         if (this.mixer) { this.mixer.update(m_delta); }
+
+        this.obj.position.y = terrain_height+0.5
+
+        // this.obj.position.y += 0.1
+
+    }
+
+    get_loc() {
+        let handVec = new THREE.Vector3()
+
+        this.obj.getWorldPosition(handVec)
+        return handVec
     }
 }
 

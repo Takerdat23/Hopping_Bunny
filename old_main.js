@@ -1,6 +1,9 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+import * as TWEEN from 'tween'
+
+
 var scene,
   camera, fieldOfView, aspectRatio, nearPlane, farPlane,
   gobalLight, shadowLight, backLight,
