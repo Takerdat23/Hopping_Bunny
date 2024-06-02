@@ -1,11 +1,11 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { grassTexture, bumpTexture } from '../textures.js'
-import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 
 import { get_polygon_tree_pack, getCottage } from '../models.js';
 
-import { create_tree, create_forest } from './tree.js'
+import { create_forest, update_forest } from './tree.js'
+import { create_corttage } from './cottages.js';
 
 class Floor {
     constructor(floorRadius, width_multiplier = 4, height_multiplier = 3) {
@@ -14,8 +14,8 @@ class Floor {
         this.height_multiplier = height_multiplier
 
 
-        this.widthSegments = 20
-        this.heightSegments = 20
+        this.widthSegments = 40
+        this.heightSegments = this.widthSegments
 
         this.floorWidth = floorRadius * width_multiplier
         this.floorHeight = floorRadius * height_multiplier
@@ -51,7 +51,7 @@ class Floor {
         this.objs_holder = new THREE.Group()
 
         this.obj.add(this.objs_holder)
-        
+
         this.offset = floorRadius
         this.obj.position.z -= this.offset
 
@@ -59,10 +59,10 @@ class Floor {
         this.regenerateFloor()
     }
 
-    regenerateFloor() {
+    regenerateFloor(delta=0) {
         this.clear_scene()
-        let position = this.original_pos.clone()
-
+        let ori_position = this.original_pos.clone()
+        let position = this.floorGeometry.attributes.position
 
         // vertex displacement
 
@@ -70,17 +70,18 @@ class Floor {
 
         for (let i = 0, l = position.count; i < l; i++) {
 
-            vertex.fromBufferAttribute(position, i);
+            vertex.fromBufferAttribute(ori_position, i);
 
             vertex.x += Math.random() * 20 - 10;
             vertex.y += Math.random() * 20 - 10;
-            vertex.z += Math.random() * 16 - 8;
+
+            let z = noise.simplex3(vertex.x / 200, vertex.y / 200, delta)
+
+            vertex.z = z * 10
 
             position.setXYZ(i, vertex.x, vertex.y, vertex.z);
 
         }
-
-        this.floorGeometry.attributes.position = position
 
         this.populate_objects()
     }
@@ -105,10 +106,13 @@ class Floor {
             vertex.fromBufferAttribute(position, pos_id);
             other_vertex.fromBufferAttribute(other_position, other_pos_id);
 
-            vertex.z = other_vertex.z;
-            vertex.y = other_vertex.y;
-            vertex.x = other_vertex.x - this.width_multiplier * this.floorRadius;
-            position.setXYZ(pos_id, vertex.x, vertex.y, vertex.z);
+            let new_x = other_vertex.x - this.width_multiplier * this.floorRadius
+
+            let new_y = (vertex.y + other_vertex.y)/2
+            let new_z = (vertex.z + other_vertex.z)/2
+
+            position.setXYZ(pos_id, new_x, new_y, new_z);
+            other_position.setXYZ(other_pos_id, other_vertex.x, new_y, new_z);
 
         }
     }
@@ -151,38 +155,44 @@ class Floor {
         // cot.position.z=0
         // cot.position.y=100
 
-        // let tree = create_tree()
-        // this.objs_holder.add(tree)
+        let forest = create_forest(20, this.floorWidth, this.floorHeight, this.offset)
+        forest.name="forest"
+        this.objs_holder.add(forest)
+        
+        if (Math.random() < 0.5){
 
-        // console.log(tree.position)
-
-        create_forest(
-            50, this.floorWidth, this.floorHeight,this.offset, this.objs_holder
-        )
-
+            let cot = create_corttage(
+                this.floorWidth, this.floorHeight, this.offset
+            )
+            this.objs_holder.add(cot)
+        }
 
         // // TODO: fix this function
         this.elevate_objects()
 
-        // this.objs_holder.traverse(function (object) {
-        //     if (object instanceof THREE.Mesh) {
-        //         object.castShadow = true;
-        //         object.receiveShadow = true;
+        this.objs_holder.traverse(function (object) {
+            if (object instanceof THREE.Mesh) {
+                object.castShadow = true;
+                // object.receiveShadow = true;
 
-        //     }
-        // });
+            }
+        });
     }
 
     elevate_objects() {
         for (var i = this.objs_holder.children.length - 1; i >= 0; i--) {
             let obj = this.objs_holder.children[i];
 
+            // obj.visible=false
+
             let { x, y, z } = obj.getWorldPosition(new THREE.Vector3())
 
             let h = this.get_height(x, z)
+            // console.log(x, y, z, h)
 
             if (h != undefined) {
-                obj.position.y += h - 1
+                // console.log(h)
+                obj.position.y += h - 3
             }
 
         }
@@ -195,6 +205,11 @@ class Floor {
         }
     }
 
+    update(delta) {
+        let forest = this.objs_holder.getObjectByName("forest")
+        update_forest(forest, delta)
+    }
+
 }
 
 const rotate = (arr, count = 1) => {
@@ -202,7 +217,7 @@ const rotate = (arr, count = 1) => {
 };
 
 class SlidingFloor {
-    constructor(floorRadius, width_multiplier = 4, height_multiplier = 4) {
+    constructor(floorRadius, width_multiplier = 3, height_multiplier = 4) {
         this.floorRadius = floorRadius
         this.width_multiplier = width_multiplier
         this.height_multiplier = height_multiplier
@@ -211,7 +226,7 @@ class SlidingFloor {
 
         this.floors = []
 
-        this.N = 5
+        this.N = 4
 
         for (let i = 0; i < this.N; i++) {
             this.floors.push(new Floor(floorRadius, width_multiplier, height_multiplier))
@@ -235,21 +250,28 @@ class SlidingFloor {
 
         // reset position if the first floor is out of view
         if (this.floors[0].obj.position.x < -this.floorRadius * this.width_multiplier) {
+            this.floors[0].regenerateFloor(delta)
+
             this.floors[0].obj.position.x = this.floors[this.N - 1].obj.position.x + this.floorRadius * this.width_multiplier
-            
+
+
             this.floors[0].fuse(this.floors[this.N - 1])
 
             // roll the array
             this.floors = rotate(this.floors, 1)
+        }
 
+        // only update animation on the first two floor
+        for (let i = 0; i < 2; i++) {
+            this.floors[i].update(delta)
         }
     }
 
     get_height(x, z) {
         let height
-        for (let i = 0; i < this.N; i++){
+        for (let i = 0; i < this.N; i++) {
             height = this.floors[i].get_height(x, z)
-            if (height != undefined)break
+            if (height != undefined) break
         }
 
         return height

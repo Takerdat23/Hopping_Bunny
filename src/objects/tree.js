@@ -40,13 +40,52 @@ var skinMat = new THREE.MeshPhongMaterial({
   flatShading: true
 });
 
+function shape_leaves(leavesGeometry) {
+  let position = leavesGeometry.attributes.position
+
+
+  // vertex displacement
+
+  let vertex = new THREE.Vector3();
+
+  let middle = new THREE.Vector3();
+
+  leavesGeometry.computeBoundingBox();
+
+  middle.x = (leavesGeometry.boundingBox.max.x + leavesGeometry.boundingBox.min.x) / 2;
+  middle.y = (leavesGeometry.boundingBox.max.y + leavesGeometry.boundingBox.min.y) / 2;
+  middle.z = (leavesGeometry.boundingBox.max.z + leavesGeometry.boundingBox.min.z) / 2;
+
+
+  for (let i = 0, l = position.count; i < l; i++) {
+
+    vertex.fromBufferAttribute(position, i);
+    let ratio = noise.simplex3(vertex.x/20, vertex.y/20, vertex.z/20)/8 + 0.8
+
+
+    vertex.x = middle.x + (vertex.x - middle.x) * ratio
+    vertex.y = middle.y + (vertex.y - middle.y) * ratio
+    vertex.z = middle.z + (vertex.z - middle.z) * ratio
+    // let z = noise.simplex2(vertex.x / 200, vertex.y / 200)
+
+    // vertex.z += z * 10
+
+    position.setXYZ(i, vertex.x, vertex.y, vertex.z);
+
+  }
+
+}
 
 function create_tree() {
   var truncHeight = 50 + Math.random() * 150;
+  let leaves_radius = truncHeight / 4 + Math.random() * 10
+
   var topRadius = 1 + Math.random() * 5;
   var bottomRadius = 5 + Math.random() * 5;
-  var mats = [blackMat, brownMat, pinkMat, whiteMat, greenMat, lightBrownMat, pinkMat];
-  var matTrunc = blackMat; //mats[Math.floor(Math.random()*mats.length)];
+  var mats = [brownMat, pinkMat, whiteMat, greenMat, lightBrownMat, pinkMat, blackMat];
+  var matTrunc = blackMat;
+  // var matTrunc = mats[Math.floor(Math.random() * mats.length)]; //mats[Math.floor(Math.random()*mats.length)];
+
   var nhSegments = 3; //Math.ceil(2 + Math.random()*6);
   var nvSegments = 3; //Math.ceil(2 + Math.random()*6);
 
@@ -57,6 +96,8 @@ function create_tree() {
 
   let vertices = geom.attributes.position
   let vertex = new THREE.Vector3();
+
+  let fruits = new THREE.Group()
 
   for (var i = 0; i < vertices.count; i++) {
 
@@ -72,6 +113,7 @@ function create_tree() {
 
     geom.computeVertexNormals();
 
+
     // FRUITS
     if (Math.random() > .7) {
       var size = Math.random() * 3;
@@ -84,8 +126,9 @@ function create_tree() {
       fruit.rotation.x = Math.random() * Math.PI;
       fruit.rotation.y = Math.random() * Math.PI;
 
-      mesh.add(fruit);
+      fruits.add(fruit);
     }
+
 
     // BRANCHES
     if (Math.random() > .5 && vertex.y > 10 && vertex.y < truncHeight - 10) {
@@ -109,6 +152,28 @@ function create_tree() {
 
   }
 
+  if (Math.random() < 0.5) {
+
+    let leavesGeometry = new THREE.SphereGeometry(leaves_radius, 32, 32)
+    var matleaves = mats[Math.floor(Math.random() * (mats.length - 1))];
+
+    let leaves = new THREE.Mesh(leavesGeometry, matleaves);
+    // leaves.scale.set(
+    //   Math.random() * 0.2 + 0.8,
+    //   Math.random() * 0.2 + 0.8,
+    //   Math.random() * 0.2 + 0.8,
+    // )
+    shape_leaves(leavesGeometry)
+
+    leaves.applyMatrix4(new THREE.Matrix4().makeTranslation(0, truncHeight - leaves_radius * 0.2, 0));
+
+    mesh.add(leaves)
+  }
+
+  fruits.name = "fruits"
+
+  mesh.add(fruits)
+
   mesh.castShadow = true;
 
   // mesh.position.y += truncHeight / 2
@@ -117,10 +182,20 @@ function create_tree() {
   return mesh
 }
 
-function create_forest(nTrees, floorWidth, floorHeight,offset, scene=0) {
-  // let treeSpacing = floorWidth / nTrees
+// Standard Normal variate using Box-Muller transform.
+function gaussianRandom(mean = 0, stdev = 1) {
+  const u = 1 - Math.random(); // Converting [0,1) to (0,1]
+  const v = Math.random();
+  const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  // Transform to the desired mean and standard deviation:
+  return z * stdev + mean;
+}
 
-  let limit=0.019 * floorHeight
+
+function create_forest(nTrees, floorWidth, floorHeight, offset) {
+  let limit = 0.019 * floorHeight
+
+  let forest = new THREE.Group()
 
   for (var i = 0; i < nTrees; i++) {
     var tree = create_tree()
@@ -129,24 +204,51 @@ function create_forest(nTrees, floorWidth, floorHeight,offset, scene=0) {
 
     tree.position.y = 0; // Trees on the floor 
 
-
     let z
     do {
       z = Math.random() * floorHeight - floorHeight / 2;
-    }while(Math.abs(z-offset) < limit)
+    } while (Math.abs(z - offset) < limit)
 
     tree.position.z = z
 
+    let w = floorWidth * 0.9
 
-    tree.position.x = Math.random() * floorWidth - floorWidth / 2;
+    tree.position.x = Math.random() * w - w / 2;
 
-    tree.rotation.x = Math.random()/10
-    tree.rotation.z = Math.random()/10
-    tree.rotation.y = Math.random()
+    tree.rotation.x = gaussianRandom() * Math.PI / 28
+    // tree.rotation.x = 0
+    // tree.rotation.z = Math.random()
+    tree.rotation.y = Math.random() * Math.PI / 2
+
+    forest.add(tree)
+  }
+
+  return forest
+}
+
+function update_tree(tree, delta) {
+  let fruits = tree.getObjectByName("fruits")
 
 
-    scene.add(tree)
+  for (let i = 0; i < fruits.children.length; i++) {
+    let f = fruits.children[i]
+    f.rotation.y += noise.simplex2(delta, delta) * 0.1
+    f.rotation.x += noise.simplex2(delta, delta) * 0.1
+    f.rotation.z += noise.simplex2(delta, delta) * 0.1
+
+    // f.rotation.z = noise.simplex2(f.position.z, delta) * 50
+    // f.rotation.x += delta
+    f.position.y += Math.sin(delta) * noise.simplex2(delta, delta)
+
   }
 }
 
-export { create_tree, create_forest }
+function update_forest(forest, delta) {
+  for (let i = 0; i < forest.children.length; i++) {
+    let tree = forest.children[i]
+    update_tree(tree, delta)
+  }
+}
+
+
+export { create_forest, create_tree, update_forest, update_tree }

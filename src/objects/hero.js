@@ -18,7 +18,6 @@ class Hero {
 
         this.obj.add(h_scene)
 
-
         h_scene.scale.set(0.3, 0.3, 0.3)
 
 
@@ -42,7 +41,7 @@ class Hero {
 
         this.running()
 
-        this.obj.traverse(function (object) {
+        h_scene.traverse(function (object) {
             if (object instanceof THREE.Mesh) {
                 object.castShadow = true;
                 object.receiveShadow = true;
@@ -107,6 +106,7 @@ class Hero {
         let t = perlin.noise(m_delta, 1, Math.random() / 1000)
         if (this.mixer) { this.mixer.update(t); }
 
+        if (terrain_height == undefined) return
         this.obj.position.y = this.obj.position.y * 0.6 + terrain_height * 0.4
 
         // this.obj.position.y += 0.1

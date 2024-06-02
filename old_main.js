@@ -221,6 +221,7 @@ function createLights() {
   shadowLight.shadow.camera.bottom = -400;
   shadowLight.shadow.camera.near = 1;
   shadowLight.shadow.camera.far = 2000;
+  
   shadowLight.shadow.mapSize.width = shadowLight.shadow.mapSize.height = 2048;
 
   scene.add(globalLight);
