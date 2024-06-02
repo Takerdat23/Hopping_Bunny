@@ -60,7 +60,8 @@ function shape_leaves(leavesGeometry) {
   for (let i = 0, l = position.count; i < l; i++) {
 
     vertex.fromBufferAttribute(position, i);
-    let ratio = noise.simplex3(vertex.x/20, vertex.y/20, vertex.z/20)/8 + 0.8
+    let s = 30
+    let ratio = noise.simplex3(vertex.x / s, vertex.y / s, vertex.z / s) / 8 + 0.8
 
 
     vertex.x = middle.x + (vertex.x - middle.x) * ratio
@@ -115,13 +116,13 @@ function create_tree() {
 
 
     // FRUITS
-    if (Math.random() > .7) {
-      var size = Math.random() * 3;
+    if (Math.random() > .8) {
+      var size = Math.random() * 10;
       var fruitGeometry = new THREE.BoxGeometry(size, size, size, 1);
       var matFruit = mats[Math.floor(Math.random() * mats.length)];
       var fruit = new THREE.Mesh(fruitGeometry, matFruit);
       fruit.position.x = vertex.x;
-      fruit.position.y = vertex.y + 3;
+      fruit.position.y = vertex.y + size;
       fruit.position.z = vertex.z;
       fruit.rotation.x = Math.random() * Math.PI;
       fruit.rotation.y = Math.random() * Math.PI;
@@ -154,18 +155,21 @@ function create_tree() {
 
   if (Math.random() < 0.5) {
 
-    let leavesGeometry = new THREE.SphereGeometry(leaves_radius, 32, 32)
+    let seg = Math.floor(leaves_radius/2)
+    let leavesGeometry = new THREE.SphereGeometry(leaves_radius, seg, seg)
     var matleaves = mats[Math.floor(Math.random() * (mats.length - 1))];
 
     let leaves = new THREE.Mesh(leavesGeometry, matleaves);
-    // leaves.scale.set(
-    //   Math.random() * 0.2 + 0.8,
-    //   Math.random() * 0.2 + 0.8,
-    //   Math.random() * 0.2 + 0.8,
-    // )
+    leaves.scale.set(
+      Math.random()*0.8 + 0.8,
+      Math.random()*0.8 + 0.8,
+      Math.random()*0.8 + 0.8,
+    )
     shape_leaves(leavesGeometry)
 
     leaves.applyMatrix4(new THREE.Matrix4().makeTranslation(0, truncHeight - leaves_radius * 0.2, 0));
+
+    leaves.name = "leaves"
 
     mesh.add(leaves)
   }
@@ -241,6 +245,13 @@ function update_tree(tree, delta) {
     f.position.y += Math.sin(delta) * noise.simplex2(delta, delta)
 
   }
+
+  // let leaves = tree.getObjectByName("leaves")
+  // if (leaves != undefined){
+  //   // leaves.rotation.y += noise.simplex2(delta, delta)*0.8
+  //   leaves.position.y += noise.simplex2(delta, delta)*0.8
+  //   // * noise.simplex2(delta, delta)
+  // }
 }
 
 function update_forest(forest, delta) {

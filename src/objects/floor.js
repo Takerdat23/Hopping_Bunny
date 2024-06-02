@@ -7,6 +7,17 @@ import { get_polygon_tree_pack, getCottage } from '../models.js';
 import { create_forest, update_forest } from './tree.js'
 import { create_corttage } from './cottages.js';
 
+
+let fcolors = [
+    0x100707,
+    0xb44b39,
+    0x7abf8e,
+    0xdc5f45,
+    0xe07a57,
+    0xa49789,
+]
+
+
 class Floor {
     constructor(floorRadius, width_multiplier = 4, height_multiplier = 3) {
         this.floorRadius = floorRadius
@@ -27,15 +38,14 @@ class Floor {
 
         this.floorGeometry = floorGeometry
 
-
-        let floor = new THREE.Mesh(floorGeometry, new THREE.MeshPhongMaterial({
+        this.floorMat = new THREE.MeshPhongMaterial({
             color: 0x7abf8e,
             // specular: 0x000000,
             // shininess: 1,
-            // transparent: true,
-            // opacity: .5
             flatShading: true
-        }));
+        })
+
+        let floor = new THREE.Mesh(floorGeometry, this.floorMat);
 
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
@@ -77,7 +87,7 @@ class Floor {
 
             let z = noise.simplex3(vertex.x / 200, vertex.y / 200, delta)
 
-            vertex.z = z * 10
+            vertex.z = z * 30
 
             position.setXYZ(i, vertex.x, vertex.y, vertex.z);
 
@@ -261,8 +271,8 @@ class SlidingFloor {
             this.floors = rotate(this.floors, 1)
         }
 
-        // only update animation on the first two floor
-        for (let i = 0; i < 2; i++) {
+        // only update animation on the first 3 floor
+        for (let i = 0; i < 3; i++) {
             this.floors[i].update(delta)
         }
     }

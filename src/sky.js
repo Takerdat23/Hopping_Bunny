@@ -103,7 +103,7 @@ class daySky {
         this.dirLight.shadow.camera.bottom = -d;
 
         this.dirLight.shadow.camera.near = 1;
-        this.dirLight.shadow.camera.far = 2000;
+        this.dirLight.shadow.camera.far = 3000;
         // this.dirLight.shadow.radius = 0.01;
         // this.dirLight.shadow.bias = -0.01;
 

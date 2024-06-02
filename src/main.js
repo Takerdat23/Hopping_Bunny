@@ -35,7 +35,7 @@ class Game {
 
         this.delta = 0;
         this.floorRadius = 200;
-        this.speed = 0;
+        this.speed = 5;
         this.distance = 0;
         this.level = 1;
         this.levelInterval;
@@ -64,7 +64,7 @@ class Game {
         this.aspectRatio = this.WIDTH / this.HEIGHT;
         this.fieldOfView = 50;
         this.nearPlane = 1;
-        this.farPlane = 2000;
+        this.farPlane = 2500;
 
         this.mousePos = {
             x: 0,
