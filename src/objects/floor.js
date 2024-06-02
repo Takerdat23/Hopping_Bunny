@@ -85,9 +85,9 @@ class Floor {
             vertex.x += Math.random() * 20 - 10;
             vertex.y += Math.random() * 20 - 10;
 
-            let z = noise.simplex3(vertex.x / 200, vertex.y / 200, delta)
+            let z = noise.simplex3(vertex.x / 150, vertex.y / 150, delta)
 
-            vertex.z = z * 30
+            vertex.z = z * 20
 
             position.setXYZ(i, vertex.x, vertex.y, vertex.z);
 
@@ -121,9 +121,8 @@ class Floor {
             let new_y = (vertex.y + other_vertex.y)/2
             let new_z = (vertex.z + other_vertex.z)/2
 
-            position.setXYZ(pos_id, new_x, new_y, new_z);
-            other_position.setXYZ(other_pos_id, other_vertex.x, new_y, new_z);
-
+            position.setXYZ(pos_id, new_x-2, new_y, new_z);
+            other_position.setXYZ(other_pos_id, other_vertex.x+2, new_y, new_z);
         }
     }
 
@@ -134,7 +133,7 @@ class Floor {
         var rayPos = new THREE.Vector3();
 
         // Use y = 100 to ensure ray starts above terran
-        let topy = 150
+        let topy = 500
 
         rayPos.set(x, topy, z);
         var rayDir = new THREE.Vector3(0, -1, 0); // Ray points down
@@ -255,7 +254,7 @@ class SlidingFloor {
     update(delta, speed) {
 
         for (let i = 0; i < this.N; i++) {
-            this.floors[i].obj.position.x = this.floors[i].obj.position.x - speed * delta * 10
+            this.floors[i].obj.position.x = this.floors[i].obj.position.x - speed * delta
         }
 
         // reset position if the first floor is out of view

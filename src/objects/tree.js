@@ -215,9 +215,9 @@ function create_forest(nTrees, floorWidth, floorHeight, offset) {
 
     tree.position.z = z
 
-    let w = floorWidth * 0.9
+    // let w = floorWidth * 0.9
 
-    tree.position.x = Math.random() * w - w / 2;
+    tree.position.x = Math.random() * floorWidth - floorWidth / 2;
 
     tree.rotation.x = gaussianRandom() * Math.PI / 28
     // tree.rotation.x = 0

@@ -77,4 +77,7 @@ function getCottage(){
 
     return obj
 }
-export { get_polygon_tree_pack, HeroModel, getCottage }
+
+let TrapModel = await gltfLoader.loadAsync("models/trap2/scene.gltf")
+
+export { get_polygon_tree_pack, HeroModel, getCottage, TrapModel }

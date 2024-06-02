@@ -71,9 +71,45 @@ class Game {
             y: 0
         };
 
-        this.gui.add(this, 'speed', 0, 100)
 
         this.autoDayNight = false
+
+        this.whitespace_pressed = false
+
+        document.addEventListener("keyup", this.onWhitespaceUp.bind(this));
+        document.addEventListener("keydown", this.onWhitespaceDown.bind(this));
+        // document.addEventListener("mouseup", this.onWhitespaceDown.bind(this));
+        // document.addEventListener("mousedown", this.onWhitespaceDown.bind(this));
+
+        this.max_whitespace_pressed_time = 50 // 50ms
+        this.min_whitespace_pressed_time = 10 // 10ms
+        this.last_whitespace_pressed = 10
+        // time since last onWhitespaceDown
+        this.whitespace_pressed_time = 0
+
+    }
+    onWhitespaceUp(e){
+        
+        if (e.key == " " || e instanceof MouseEvent){
+            this.whitespace_pressed = false
+        }
+    }
+    onWhitespaceDown(e){
+
+        if (e.key == " " || e instanceof MouseEvent){
+            this.whitespace_pressed = true
+        }
+    }
+    get_white_space_status(delta){
+        this.last_whitespace_pressed += delta
+        this.whitespace_pressed_time += delta
+
+        if (this.whitespace_pressed_time < this.min_whitespace_pressed_time) {
+            return true
+        }
+        if (this.whitespace_pressed_time > this.max_whitespace_pressed_time) {
+            return false
+        }
 
 
 
@@ -96,7 +132,7 @@ class Game {
         this.camera.position.x = -110;
         this.camera.position.z = 95;
         this.camera.position.y = 25;
-        this.camera.lookAt(new THREE.Vector3(0, 100, 0));
+        this.camera.lookAt(new THREE.Vector3(0, 200, 0));
 
         this.renderer = new THREE.WebGLRenderer({
             alpha: true,
@@ -176,8 +212,7 @@ class Game {
 
         this.hero = new Hero()
         this.floor.obj.add(this.hero.obj)
-
-
+        this.gui.add(this.hero, 'speed', 0,400)
     }
 
     update() {
@@ -187,24 +222,22 @@ class Game {
 
         this.controls.update();
 
-        this.floor.update(delta, this.speed)
-
-        // update hero position on the floor
-        // hero has a fix position of x=0 and z=0
-        // y is the height
-        // this.hero.obj.position.y=100
-
+        let speed = this.hero.velocity.x
+        
+        this.floor.update(delta, speed)
+        
         let terrain_height = this.floor.get_height(0, 0)
-        // console.log(height);
-        // this.hero.obj.position.y=terrain_height + 1
 
-        this.hero.update(delta, this.speed, terrain_height)
+        this.hero.update(delta, terrain_height, this.whitespace_pressed)
+
         if (this.autoDayNight) {
 
             this.skyb.parameters["elevation"] = (this.skyb.parameters["elevation"] + 0.1) % 360
             this.skyb.updateSun()
 
         }
+
+        // console.log(this.whitespace_pressed)
 
         // this.test()
         this.renderer.renderLists.dispose()
