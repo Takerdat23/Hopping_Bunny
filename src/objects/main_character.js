@@ -7,7 +7,7 @@ import * as TWEEN from 'tween'
 import { HeroModel } from '../models.js';
 const perlin = new ImprovedNoise();
 
-class Hero {
+class MainCharacter {
     constructor() {
         this.state = ""
         this.obj = new THREE.Group();
@@ -135,15 +135,31 @@ class Hero {
         // if (this.state == "jumping") {
         //     return
         // }
-        // this.target_velocity.x = this.speed/2
+        this.target_velocity.x = this.speed*4
         this.target_velocity.y = 1000
         // this.stop_animation()
         this.state = "jumping"
     }
 
+    die(){
+        this.state = "dead"
+        this.stop_animation()
+        this.obj.rotation.x=Math.PI/2
+
+        this.obj.position.z=-10
+        this.obj.position.y+=10
+        this.velocity.x=0
+        this.velocity.y=0
+        this.target_velocity.x=0
+        this.target_velocity.y=0
+    }
     play_animation(){}
     update(delta, terrain_height, whitespace_pressed) {
         // console.log(whitespace_pressed)
+
+        if (this.state == "dead"){
+            return
+        }
 
         let speed = this.velocity.x
 
@@ -198,6 +214,7 @@ class Hero {
         if (this.obj.position.y < terrain_height) {
             this.obj.position.y = terrain_height
         }
+        // console.log(this.obj.position.y, terrain_height)
 
     }
 
@@ -210,5 +227,5 @@ class Hero {
 }
 
 export {
-    Hero
+    MainCharacter
 }

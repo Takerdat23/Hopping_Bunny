@@ -10,7 +10,7 @@ import Stats from 'three/addons/libs/stats.module.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 
 import { SlidingFloor } from './objects/floor.js';
-import { Hero } from './objects/hero.js'
+import { MainCharacter } from './objects/main_character.js'
 
 import { get_polygon_tree_pack } from './models.js';
 
@@ -210,9 +210,48 @@ class Game {
 
         this.scene.add(this.floor.obj)
 
-        this.hero = new Hero()
-        this.floor.obj.add(this.hero.obj)
-        this.gui.add(this.hero, 'speed', 0,400)
+        const axesHelper = new THREE.AxesHelper( 10 );
+        this.scene.add(axesHelper)
+        
+        const ah2 = new THREE.AxesHelper( 10 );
+        this.main_char = new MainCharacter()
+        this.main_char.obj.add(ah2)
+        this.floor.obj.add(this.main_char.obj)
+        this.gui.add(this.main_char, 'speed', 0,400)
+    }
+
+    check_main_character_collision(){
+        let obstacles = this.floor.obj.getObjectsByProperty("is_obs", true)
+
+        // console.log(obstacles)
+        let mindistance = 9000
+
+        for (let i = 0; i < obstacles.length;i++){
+
+            let ov = new THREE.Vector3()
+            let cv = new THREE.Vector3()
+
+            obstacles[i].getWorldPosition(ov)
+            this.main_char.obj.getWorldPosition(cv)
+            
+            
+            // console.log(cv)
+
+            let distance = cv.distanceTo(ov)
+
+            
+            if (distance < 10){
+                // console.log(distance)
+                this.main_char.die()
+            }
+            
+            if (distance < mindistance){
+                mindistance = distance
+            }
+            
+            
+        }
+        // console.log(mindistance)
     }
 
     update() {
@@ -222,13 +261,15 @@ class Game {
 
         this.controls.update();
 
-        let speed = this.hero.velocity.x
+        let speed = this.main_char.velocity.x
         
         this.floor.update(delta, speed)
         
         let terrain_height = this.floor.get_height(0, 0)
 
-        this.hero.update(delta, terrain_height, this.whitespace_pressed)
+        // console.log(terrain_height)
+
+        this.main_char.update(delta, terrain_height, this.whitespace_pressed)
 
         if (this.autoDayNight) {
 
@@ -237,10 +278,12 @@ class Game {
 
         }
 
+        this.check_main_character_collision()
         // console.log(this.whitespace_pressed)
-
+        // this.floor.floors[0].elevate_objects()
         // this.test()
         this.renderer.renderLists.dispose()
+
 
         this.stats.update()
         requestAnimationFrame(this.update.bind(this))

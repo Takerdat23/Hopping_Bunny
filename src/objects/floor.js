@@ -7,6 +7,44 @@ import { get_polygon_tree_pack, getCottage } from '../models.js';
 import { create_forest, update_forest } from './tree.js'
 import { create_corttage } from './cottages.js';
 
+import { create_traps } from './obstacles.js';
+
+function disposeNode(node) {
+    if (node instanceof THREE.Mesh) {
+        if (node.geometry) {
+            node.geometry.dispose();
+        }
+
+        if (node.material) {
+
+            // if (node.material.map) node.material.map.dispose();
+            // if (node.material.lightMap) node.material.lightMap.dispose();
+            // if (node.material.bumpMap) node.material.bumpMap.dispose();
+            // if (node.material.normalMap) node.material.normalMap.dispose();
+            // if (node.material.specularMap) node.material.specularMap.dispose();
+            // if (node.material.envMap) node.material.envMap.dispose();
+            // if (node.material.alphaMap) node.material.alphaMap.dispose();
+            // if (node.material.aoMap) node.material.aoMap.dispose();
+            // if (node.material.displacementMap) node.material.displacementMap.dispose();
+            // if (node.material.emissiveMap) node.material.emissiveMap.dispose();
+            // if (node.material.gradientMap) node.material.gradientMap.dispose();
+            // if (node.material.metalnessMap) node.material.metalnessMap.dispose();
+            // if (node.material.roughnessMap) node.material.roughnessMap.dispose();
+
+            node.material.dispose();   // disposes any programs associated with the material
+
+        }
+    }
+}   // disposeNode
+
+function disposeHierarchy(node, callback) {
+    for (var i = node.children.length - 1; i >= 0; i--) {
+        var child = node.children[i];
+        disposeHierarchy(child, callback);
+        callback(child);
+    }
+}
+
 
 let fcolors = [
     0x100707,
@@ -65,14 +103,19 @@ class Floor {
         this.offset = floorRadius
         this.obj.position.z -= this.offset
 
+        this.elevate_objects_flag = false
 
         this.regenerateFloor()
     }
 
-    regenerateFloor(delta=0) {
+    regenerateFloor(delta = 0) {
         this.clear_scene()
-        let ori_position = this.original_pos.clone()
+        let ori_position = this.original_pos
         let position = this.floorGeometry.attributes.position
+
+        if (delta == 0) {
+            delta = Math.random() * 10
+        }
 
         // vertex displacement
 
@@ -82,18 +125,23 @@ class Floor {
 
             vertex.fromBufferAttribute(ori_position, i);
 
-            vertex.x += Math.random() * 20 - 10;
-            vertex.y += Math.random() * 20 - 10;
+            let x = vertex.x + Math.random() * 20 - 10;
+            let y = vertex.y + Math.random() * 20 - 10;
 
-            let z = noise.simplex3(vertex.x / 150, vertex.y / 150, delta)
+            let r = 200
+            let z = noise.simplex3(vertex.x / r, vertex.y / r, delta)
 
-            vertex.z = z * 20
+            z = z * 20
 
-            position.setXYZ(i, vertex.x, vertex.y, vertex.z);
+            position.setXYZ(i, x, y, z);
 
         }
 
+        position.needsUpdate = true
+
+
         this.populate_objects()
+        this.elevate_objects_flag = false
     }
 
     fuse(other_floor) {
@@ -118,12 +166,15 @@ class Floor {
 
             let new_x = other_vertex.x - this.width_multiplier * this.floorRadius
 
-            let new_y = (vertex.y + other_vertex.y)/2
-            let new_z = (vertex.z + other_vertex.z)/2
+            let new_y = (vertex.y + other_vertex.y) / 2
+            let new_z = (vertex.z + other_vertex.z) / 2
 
-            position.setXYZ(pos_id, new_x-2, new_y, new_z);
-            other_position.setXYZ(other_pos_id, other_vertex.x+2, new_y, new_z);
+            position.setXYZ(pos_id, new_x, new_y, new_z);
+            other_position.setXYZ(other_pos_id, other_vertex.x, new_y, new_z);
         }
+
+        position.needsUpdate = true
+        other_position.needsUpdate = true
     }
 
     get_height(x, z, include_children = false) {
@@ -133,42 +184,50 @@ class Floor {
         var rayPos = new THREE.Vector3();
 
         // Use y = 100 to ensure ray starts above terran
-        let topy = 500
+        let topy = 200
 
         rayPos.set(x, topy, z);
         var rayDir = new THREE.Vector3(0, -1, 0); // Ray points down
+        rayDir.normalize()
 
         // Set ray from pos, pointing down
         ray.set(rayPos, rayDir);
 
         // Check where it intersects terrain Mesh
-        let intersect = ray.intersectObject(this.floor, include_children);
+        let intersect = ray.intersectObject(this.floor);
 
 
-        if (intersect.length == 1) {
-            // console.log(intersect)
+        // if (intersect.length == 1) {
+        //     // console.log(intersect)
 
-            let height = topy - intersect[0].distance
+        //     let height = topy - intersect[0].distance
 
-            return height
+        //     return height
+        // }
+
+
+        // console.log(intersect.length)
+        // d
+        let distance = topy * 2
+
+        for (let i = 0; i < intersect.length; i++) {
+            if (intersect[i].distance < distance) distance = intersect[i].distance
         }
-        return undefined
+        // console.log(distance)
+
+        if (distance == topy * 2) return undefined
+
+
+        return topy - distance
     }
 
     populate_objects() {
-        // let cot = getCottage()
-        // this.objs_holder.add(cot)
-
-        // cot.rotation.x=Math.PI/2
-        // cot.position.x=0
-        // cot.position.z=0
-        // cot.position.y=100
 
         let forest = create_forest(20, this.floorWidth, this.floorHeight, this.offset)
-        forest.name="forest"
+        forest.name = "forest"
         this.objs_holder.add(forest)
-        
-        if (Math.random() < 0.5){
+
+        if (Math.random() < 0.5) {
 
             let cot = create_corttage(
                 this.floorWidth, this.floorHeight, this.offset
@@ -176,8 +235,13 @@ class Floor {
             this.objs_holder.add(cot)
         }
 
+        let traps = create_traps(
+            this.floorWidth, this.floorHeight, this.offset
+        )
+        this.objs_holder.add(traps)
+
         // // TODO: fix this function
-        this.elevate_objects()
+        // this.elevate_objects()
 
         this.objs_holder.traverse(function (object) {
             if (object instanceof THREE.Mesh) {
@@ -188,35 +252,51 @@ class Floor {
         });
     }
 
+    elevate_object(obj) {
+        let { x, y, z } = obj.getWorldPosition(new THREE.Vector3())
+
+        let h = this.get_height(x, z)
+        // console.log(x, y, z, h)
+
+        if (h != undefined) {
+            obj.position.y += h
+        }
+    }
+
     elevate_objects() {
+        if (this.elevate_objects_flag) return
         for (var i = this.objs_holder.children.length - 1; i >= 0; i--) {
             let obj = this.objs_holder.children[i];
-
-            // obj.visible=false
-
-            let { x, y, z } = obj.getWorldPosition(new THREE.Vector3())
-
-            let h = this.get_height(x, z)
-            // console.log(x, y, z, h)
-
-            if (h != undefined) {
-                // console.log(h)
-                obj.position.y += h - 3
-            }
+            if (obj.name == "forest") continue
+            this.elevate_object(obj)
 
         }
+        // elevate the trees
+        let forest = this.objs_holder.getObjectByName("forest")
+
+        if (forest) forest.children.forEach((obj)=>{
+            this.elevate_object(obj)
+        })
+        this.elevate_objects_flag = true
     }
 
     clear_scene() {
         for (var i = this.objs_holder.children.length - 1; i >= 0; i--) {
             let obj = this.objs_holder.children[i];
+
             this.objs_holder.remove(obj);
+
+            // disposeHierarchy(obj, disposeNode);
+            // new Promise((resolve, reject)=>{
+            // })
+
         }
     }
 
     update(delta) {
         let forest = this.objs_holder.getObjectByName("forest")
-        update_forest(forest, delta)
+
+        if (forest) update_forest(forest, delta)
     }
 
 }
@@ -255,14 +335,15 @@ class SlidingFloor {
 
         for (let i = 0; i < this.N; i++) {
             this.floors[i].obj.position.x = this.floors[i].obj.position.x - speed * delta
+            this.floors[i].elevate_objects()
         }
 
         // reset position if the first floor is out of view
         if (this.floors[0].obj.position.x < -this.floorRadius * this.width_multiplier) {
-            this.floors[0].regenerateFloor(delta)
 
             this.floors[0].obj.position.x = this.floors[this.N - 1].obj.position.x + this.floorRadius * this.width_multiplier
 
+            this.floors[0].regenerateFloor(delta)
 
             this.floors[0].fuse(this.floors[this.N - 1])
 

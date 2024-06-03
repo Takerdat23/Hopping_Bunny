@@ -78,6 +78,13 @@ function getCottage(){
     return obj
 }
 
-let TrapModel = await gltfLoader.loadAsync("models/trap2/scene.gltf")
+let TrapModel = await gltfLoader.loadAsync("models/trap/scene.gltf")
 
-export { get_polygon_tree_pack, HeroModel, getCottage, TrapModel }
+function get_trap(){
+    let obj = TrapModel.scene.clone()
+    obj.scale.set(30,30, 30)
+
+    return obj
+}
+
+export { get_polygon_tree_pack, HeroModel, getCottage, get_trap }
