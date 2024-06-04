@@ -71,7 +71,7 @@ class MainCharacter {
     }
 
     reset(){
-        this.stop_animation()
+        // this.stop_animation()
 
         this.state = ""
         this.velocity = {
@@ -169,7 +169,7 @@ class MainCharacter {
         this.target_velocity.x = this.speed*1.5
         this.target_velocity.y = 700
         // this.stop_animation()
-        this.state = "jumping"
+        // this.state = "jumping"
     }
 
     die(){

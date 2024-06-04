@@ -40,6 +40,7 @@ class daySky {
 
         this.obj.add(lights)
         this.updateSun()
+        
     }
 
     // visible(visible=false){
@@ -59,11 +60,11 @@ class daySky {
         let { x, y, z } = this.sun
 
         this.hemiLight.position.set(x, y, z)
-        this.hemiLight.position.multiplyScalar(-100)
+        this.hemiLight.position.multiplyScalar(-200)
 
 
         this.dirLight.position.set(x, y, z)
-        this.dirLight.position.multiplyScalar(200)
+        this.dirLight.position.multiplyScalar(300)
 
         if (this.parameters.elevation < 0 || this.parameters.elevation > 180) {
             this.obj.visible = false
@@ -95,7 +96,7 @@ class daySky {
         this.dirLight.shadow.mapSize.width = 4096;
         this.dirLight.shadow.mapSize.height = 4096;
 
-        const d = 1000;
+        const d = 800;
 
         this.dirLight.shadow.camera.left = - d;
         this.dirLight.shadow.camera.right = d;
@@ -108,6 +109,8 @@ class daySky {
         // this.dirLight.shadow.bias = -0.01;
 
         light.add(this.dirLight);
+
+
 
         return light
     }

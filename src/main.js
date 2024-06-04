@@ -336,7 +336,7 @@ class Game {
 
         if (this.autoDayNight) {
 
-            this.skyb.parameters["elevation"] = (this.skyb.parameters["elevation"] + 0.1) % 360
+            this.skyb.parameters["elevation"] = (this.skyb.parameters["elevation"] + 0.01) % 360
             this.skyb.updateSun()
 
         }
