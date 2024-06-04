@@ -1,8 +1,4 @@
 import * as THREE from 'three'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { grassTexture, bumpTexture } from '../textures.js'
-
-import { get_polygon_tree_pack, getCottage } from '../models.js';
 
 import { create_forest, update_forest } from './tree.js'
 import { create_corttage } from './cottages.js';
@@ -365,6 +361,17 @@ class SlidingFloor {
         }
 
         return height
+    }
+
+
+    reset(){
+        for (let i = 0; i < this.N; i++) {
+            this.floors[i].regenerateFloor()
+
+            if (i != 0) {
+                this.floors[i].fuse(this.floors[i - 1])
+            }
+        }
     }
 }
 

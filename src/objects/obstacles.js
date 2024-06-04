@@ -21,13 +21,12 @@ function create_traps(floorWidth, floorHeight, offset) {
     trap.rotation.y = Math.random() * Math.PI / 2
     trap.position.y = 4
 
-    let ah2 = new THREE.AxesHelper( 1 );
-
-    trap.add(ah2)
+    // let ah2 = new THREE.AxesHelper( 1 );
+    // trap.add(ah2)
     // trap.name = "trap"
 
     trap.is_obs = true
-    
+
 
     return trap
 }

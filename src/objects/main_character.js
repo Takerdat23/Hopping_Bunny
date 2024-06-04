@@ -61,16 +61,45 @@ class MainCharacter {
         }
         
         this.speed = 0
-        this.running()
+        this.standing()
 
         // 300 ms
-        this.max_jump_time = 100
+        this.max_jump_time = 150
         this.jump_time = this.max_jump_time
     }
 
-    update_velocity(delta){
+    reset(){
+        this.stop_animation()
 
-        let t = 7 * delta
+        this.state = ""
+        this.velocity = {
+            x: 0, 
+            y: 0 
+        }
+        
+        this.target_velocity = {
+            x: 150, // run forward
+            y: -20, // stay on the ground
+        }
+        
+        this.speed = 0
+        this.standing()
+
+        this.jump_time = this.max_jump_time
+
+        this.obj.traverse((obj)=>{
+            if (obj.is_obs == false){
+                this.obj.remove(obj)
+            }
+        })
+        this.obj.position.z=0
+
+        this.obj.rotation.x=0
+    }
+
+    update_velocity(delta){
+        // https://www.reddit.com/r/gamedev/comments/1eg21z/how_do_you_implement_acceleration/
+        let t = 4 * delta
         
         this.velocity.x = this.velocity.x * (1 - t) + this.target_velocity.x * t
         this.velocity.y = this.velocity.y * (1 - t) + this.target_velocity.y * t
@@ -135,29 +164,35 @@ class MainCharacter {
         // if (this.state == "jumping") {
         //     return
         // }
-        this.target_velocity.x = this.speed*4
-        this.target_velocity.y = 1000
+        this.target_velocity.x = this.speed*1.5
+        this.target_velocity.y = 700
         // this.stop_animation()
         this.state = "jumping"
     }
 
     die(){
-        this.state = "dead"
         this.stop_animation()
+        this.state = "dead"
         this.obj.rotation.x=Math.PI/2
 
         this.obj.position.z=-10
-        this.obj.position.y+=10
-        this.velocity.x=0
+        // this.obj.position.y+=5
+        // this.velocity.x=0
+        this.speed=0
         this.velocity.y=0
         this.target_velocity.x=0
         this.target_velocity.y=0
     }
-    play_animation(){}
+    
     update(delta, terrain_height, whitespace_pressed) {
-        // console.log(whitespace_pressed)
+        // console.log(this.target_velocity.x)
 
         if (this.state == "dead"){
+            this.update_target_velocity(terrain_height)
+            this.update_velocity(delta)
+            if (this.obj.position.y < terrain_height) {
+                this.obj.position.y = terrain_height
+            }
             return
         }
 
