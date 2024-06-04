@@ -127,7 +127,7 @@ class Floor {
             let r = 200
             let z = noise.simplex3(vertex.x / r, vertex.y / r, delta)
 
-            z = z * 20
+            z = z * 15
 
             position.setXYZ(i, x, y, z);
 

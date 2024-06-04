@@ -193,7 +193,19 @@ class Game {
         // document.addEventListener("touchend", this.onMouseDown.bind(this), false);
 
         this.clock = new THREE.Clock();
+
+        window.addEventListener( 'resize', this.onWindowResize.bind(this) );
     }
+
+    onWindowResize() {
+
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+
+        this.renderer.setSize( window.innerWidth, window.innerHeight );
+
+    }
+
 
     onMouseDown(e) {
         // when the cursor is pressed on the canvas
@@ -237,7 +249,7 @@ class Game {
 
 
         this.main_char = new MainCharacter()
-        
+
         this.floor.obj.add(this.main_char.obj)
         this.gui.add(this.main_char, 'speed', 0, 400)
     }
