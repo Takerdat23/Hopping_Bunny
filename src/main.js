@@ -154,9 +154,9 @@ class Game {
         );
 
         this.camera.position.x = -110;
-        this.camera.position.z = 95;
-        this.camera.position.y = 25;
-        this.camera.lookAt(new THREE.Vector3(0, 200, 0));
+        this.camera.position.z = 80;
+        this.camera.position.y = 50;
+        this.camera.lookAt(new THREE.Vector3(0, 0, 0));
 
         this.renderer = new THREE.WebGLRenderer({
             alpha: true,
@@ -251,14 +251,16 @@ class Game {
         this.main_char = new MainCharacter()
 
         this.floor.obj.add(this.main_char.obj)
-        this.gui.add(this.main_char, 'speed', 0, 400)
+
+        
+        let folder2 = this.gui.addFolder("main character");
+        folder2.add(this.main_char, 'speed', 0, 400)
+        folder2.add(this.main_char, 'invincibility')
+
     }
 
     check_main_character_collision() {
         let obstacles = this.floor.obj.getObjectsByProperty("is_obs", true)
-
-        // console.log(obstacles)
-        let mindistance = 9000
 
         for (let i = 0; i < obstacles.length; i++) {
 
@@ -276,7 +278,7 @@ class Game {
             obstacles[i].rotation.y += 0.01
 
 
-            if (distance < 4) {
+            if (distance < 4 && !this.main_char.invincibility) {
                 // console.log(distance)
                 this.main_char.die()
 
@@ -299,12 +301,6 @@ class Game {
                 this.main_char.obj.add(obstacles[i])
 
             }
-
-            if (distance < mindistance) {
-                mindistance = distance
-            }
-
-
 
         }
         // console.log(mindistance)

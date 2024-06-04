@@ -66,6 +66,8 @@ class MainCharacter {
         // 300 ms
         this.max_jump_time = 150
         this.jump_time = this.max_jump_time
+
+        this.invincibility = false
     }
 
     reset(){
@@ -224,7 +226,7 @@ class MainCharacter {
         if (this.state != "standing"){
 
             // animation_delta = speed/80 * delta * (Math.random()*0.6+0.7)
-            animation_delta = speed/80 * delta 
+            animation_delta = speed/120 * delta 
         }
         else{
             // animation_delta = delta * (Math.random()*0.6+0.7)
@@ -235,6 +237,7 @@ class MainCharacter {
             animation_delta = delta/80
         }
 
+        animation_delta += (Math.random()-0.5) /100
         
         
         if (this.mixer) { this.mixer.update(animation_delta); }
