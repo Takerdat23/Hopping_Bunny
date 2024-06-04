@@ -234,12 +234,10 @@ class Game {
 
         this.scene.add(this.floor.obj)
 
-        const axesHelper = new THREE.AxesHelper(10);
-        this.scene.add(axesHelper)
 
-        const ah2 = new THREE.AxesHelper(10);
+
         this.main_char = new MainCharacter()
-        this.main_char.obj.add(ah2)
+        
         this.floor.obj.add(this.main_char.obj)
         this.gui.add(this.main_char, 'speed', 0, 400)
     }
