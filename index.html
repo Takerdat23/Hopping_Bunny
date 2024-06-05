@@ -4,11 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r80/three.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/TweenMax.min.js"></script>
-    <script src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/264161/OrbitControls.js"></script>
-    <script src="./lib/GLTFLoader.js"></script>
-    <script src="main.js"></script>
+
+    <script src="src/perlin.js"></script>
+
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@v0.164.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.164.0/examples/jsm/",
+            "tween": "https://cdnjs.cloudflare.com/ajax/libs/tween.js/23.1.2/tween.esm.js",
+            "dat":"https://unpkg.com/dat.gui@0.7.9/build/dat.gui.module.js"
+          }
+        }
+      </script>
+
     <link rel = "stylesheet" href = "style.css" />
 </head>
 <body>
@@ -21,11 +31,13 @@
             <div id="distValue">000</div>
         </div>
 
-        <div id="instructions">Click to jump<span class="lightInstructions"> — Grab the carrots / avoid the hedgehogs</span></div>
+        <div id="instructions">Press any key to start<span class="lightInstructions"> Press space to jumb, r to restart</span></div>
 
         <div id="credits">
             <p><a href="https://codepen.io/Yakudoo/" target="blank">other codepens</a> | <a href="https://www.epic.net" target="blank">epic.net</a></p>
         </div>
     </div>
+
+    <script type="module" src="src/main.js"></script>
 </body>
 </html>
